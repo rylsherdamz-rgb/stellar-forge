@@ -1,12 +1,12 @@
 <div align="center">
 
-  <img src="https://stellar-agentic-framework.vercel.app/favicon.svg" width="48" height="48" alt="Stellar Agentic Framework">
+  <img src="https://stellar-agentic-framework.vercel.app/favicon.svg" width="48" height="48" alt="Stellar Forge">
 
   <br>
 
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/stellar-agentic--framework-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=1a1a2e">
-    <img alt="Stellar Agentic Framework" src="https://img.shields.io/badge/stellar-agentic--framework-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=ffffff">
+    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/stellar-forge-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=1a1a2e">
+    <img alt="Stellar Forge" src="https://img.shields.io/badge/stellar-forge-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=ffffff">
   </picture>
 
   <br>
@@ -55,7 +55,7 @@
 
 ## What Is This?
 
-The Stellar Agentic Framework is **two things that work together**:
+Stellar Forge is **two things that work together**:
 
 1. **An AI orchestration layer** (the "Skill") — a set of six specialist agent definitions + a graph engine kernel (`CLAUDE.md`) that routes your requests to the right agents, verifies their output against structured evals, and steers on failure. It runs inside Claude Code or OpenCode.
 
@@ -63,7 +63,7 @@ The Stellar Agentic Framework is **two things that work together**:
 
 **The CLI bootstraps the project. The Skill builds it.** You can use either independently — together they're a complete workflow.
 
-> **Stellar Agentic Framework** is an open-source reference implementation (MIT) demonstrating a supported AI-assisted Stellar development workflow: install the Skill → scaffold with the CLI → build & refine with AI assistance → evaluate against structured checks → validate on Stellar Testnet. See the [Instawards Statement of Work](docs/INSTAWARD-SOW.md) for the full scope.
+> **Stellar Forge** is an open-source reference implementation (MIT) demonstrating a supported AI-assisted Stellar development workflow: install the Skill → scaffold with the CLI → build & refine with AI assistance → evaluate against structured checks → validate on Stellar Testnet. See the [Instawards Statement of Work](docs/INSTAWARD-SOW.md) for the full scope.
 
 ---
 
@@ -88,7 +88,7 @@ Generic AI tools don't know Stellar. They don't know that:
 - x402 payments need OZ Channels facilitator + CAIP-2 network IDs
 - The correct curve for on-chain ZK verification is BLS12-381, not BN254
 
-This framework **embeds that domain knowledge** into 10 installable skills, 6 agent definitions, and 5 eval files. Every agent checks its output against structured pass/fail criteria before handing off. It's not a chat — it's a multi-agent graph engine with domain expertise.
+Stellar Forge **embeds that domain knowledge** into 10 installable skills, 6 agent definitions, and 5 eval files. Every agent checks its output against structured pass/fail criteria before handing off. It's not a chat — it's a multi-agent graph engine with domain expertise.
 
 ---
 
@@ -346,5 +346,5 @@ Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for 
 ---
 
 <p align="center">
-  <sub>Built with the Stellar Agentic Framework · <a href="https://stellar-agentic-framework.vercel.app">Website</a> · <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a> · <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a></sub>
+  <sub>Built with Stellar Forge · <a href="https://stellar-agentic-framework.vercel.app">Website</a> · <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a> · <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a></sub>
 </p>
