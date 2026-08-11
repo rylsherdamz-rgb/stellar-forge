@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +44,7 @@ jobs:
       - name: Publish to npmjs.org
         run: |
           node -e "const p=require('./package.json'); p.name='create-stellar-agentic'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)+'\n')"
-          npm publish --provenance --access public
+          npm publish --access public
         working-directory: packages/create-stellar-agentic
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
