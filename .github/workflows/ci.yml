@@ -59,7 +59,7 @@ jobs:
       - name: Validate CLI entry point
         run: |
           echo "::group::CLI"
-          test -f packages/create-stellar-forge/index.mjs && echo "  ✓ entry" || echo "  ✗ missing"
+          test -f packages/create-stellar-agentic/index.mjs && echo "  ✓ entry" || echo "  ✗ missing"
           echo "::endgroup::"
 
       - name: Validate bundled skills

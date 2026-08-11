@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-The Stellar Forge is a development harness for building Stellar dApps. It does not handle production secrets, user funds, or private keys directly.
+The Stellar Agentic Framework is a development harness for building Stellar dApps. It does not handle production secrets, user funds, or private keys directly.
 
 If you discover a security issue:
 
@@ -47,7 +47,7 @@ This policy covers:
 - `SKILL.md` and `CLAUDE.md` (harness logic)
 - Agent definitions in `agents/`
 - Templates in `templates/`
-- CLI in `packages/create-stellar-forge/`
+- CLI in `packages/create-stellar-agentic/`
 - Skill files in `skills/`
 
 Excluded:

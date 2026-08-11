@@ -1,5 +1,5 @@
 [CAPABILITY EVAL: framework-self-test]
-Task: Verify the Stellar Forge itself is correctly configured and operational.
+Task: Verify the Stellar Agentic Framework itself is correctly configured and operational.
 Success Criteria:
   - [ ] SKILL.md exists with all required sections
   - [ ] CLAUDE.md exists with agent registry and routing rules

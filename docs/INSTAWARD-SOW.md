@@ -28,7 +28,7 @@ What specific problem, gap, or blocker is this Instaward intended to solve?
 
 Developers building applications on Stellar rely on multiple documentation sources, SDKs, reference implementations, and supporting tools throughout the development process. AI coding assistants can accelerate software development, but they also depend on well-structured project context and developer guidance. Because Stellar development knowledge is distributed across multiple resources, developers and AI coding assistants often spend additional time locating documentation, configuring projects, and establishing consistent development workflows.
 
-The Stellar Forge addresses this challenge by providing an open-source reference implementation that demonstrates a supported AI-assisted Stellar development workflow. Rather than introducing a new AI platform, the framework organizes existing Stellar development knowledge, reusable workflows, evaluation criteria, and project scaffolding into a single installable Skill with a companion CLI (`create-stellar-forge`). This enables developers to reproduce a consistent workflow for common Stellar development tasks while building on existing Stellar tooling.
+The Stellar Forge addresses this challenge by providing an open-source reference implementation that demonstrates a supported AI-assisted Stellar development workflow. Rather than introducing a new AI platform, the framework organizes existing Stellar development knowledge, reusable workflows, evaluation criteria, and project scaffolding into a single installable Skill with a companion CLI (`create-stellar-agentic`). This enables developers to reproduce a consistent workflow for common Stellar development tasks while building on existing Stellar tooling.
 
 ### Objective of This Instaward
 
@@ -37,7 +37,7 @@ In one or two sentences, what will be true at the end of 30 days if this Instawa
 Within 30 days, this Instaward will deliver and publish an open-source reference implementation of the Stellar Forge consisting of:
 
 - An installable Skill for supported AI coding assistants (Claude Code).
-- A companion CLI (`create-stellar-forge`) for installing the Skill and scaffolding a starter Stellar project.
+- A companion CLI (`create-stellar-agentic`) for installing the Skill and scaffolding a starter Stellar project.
 - A reusable project template demonstrating required integration with Soroban and the Stellar SDK, with Wallets Kit and x402 included only as bounded reference examples if time permits.
 - A bounded evaluation workflow for validating generated project components.
 - Documentation and reproducible examples demonstrating the workflow on Stellar Testnet.
@@ -191,7 +191,7 @@ All deliverables will be released under the MIT License, including: the Stellar 
 | Component | Supported During This Sprint |
 |---|---|
 | AI Coding Assistant | Claude Code |
-| Companion CLI | create-stellar-forge |
+| Companion CLI | create-stellar-agentic |
 | Blockchain Network | Stellar Testnet |
 | Smart Contracts | Soroban |
 | Stellar Integration | Stellar SDK |
@@ -271,7 +271,7 @@ These extension points keep the required Soroban + Stellar SDK workflow untouche
 | Deliverable | Description (What will be built or produced?) | Why this matters |
 |---|---|---|
 | **Deliverable 1** | Design, implement, test, and publish the installable Stellar Forge Skill for Claude Code. The Skill will contain structured Stellar guidance, supported workflow definitions, project conventions, evaluation checks, and instructions for the documented MVP workflow. | Provides a reproducible AI-assisted Stellar development workflow without requiring a new AI platform or autonomous runtime. |
-| **Deliverable 2** | Develop the create-stellar-forge CLI to install the Skill and scaffold one small reference application centered on Soroban and the Stellar SDK. The reference project will include tests and a documented Stellar Testnet deployment or invocation path. Wallets Kit and x402 may be added only as bounded, non-blocking examples. | Gives developers a concrete, copy-pasteable path from project initialization to local validation and Stellar Testnet proof. |
+| **Deliverable 2** | Develop the create-stellar-agentic CLI to install the Skill and scaffold one small reference application centered on Soroban and the Stellar SDK. The reference project will include tests and a documented Stellar Testnet deployment or invocation path. Wallets Kit and x402 may be added only as bounded, non-blocking examples. | Gives developers a concrete, copy-pasteable path from project initialization to local validation and Stellar Testnet proof. |
 | **Deliverable 3** | Publish documentation, installation and clean-setup instructions, architecture/workflow documentation, evaluation procedures, reproducible examples, CI results, and the MIT-licensed public release. Documentation must explicitly cover: prerequisites, supported tool/language versions, required environment variables, CLI commands, Skill configuration steps, test commands, Stellar Testnet setup, expected outputs, and troubleshooting guidance. | Makes the workflow independently reproducible and provides durable evidence of completion. |
 
 ### Out-of-Scope (Explicitly Not Included)
@@ -417,7 +417,7 @@ The project will be considered successful if the following objectives are achiev
 The MVP will be considered complete when a new developer can successfully:
 
 1. Install the Stellar Forge Skill and load it into Claude Code using the published instructions.
-2. Install and run the create-stellar-forge CLI.
+2. Install and run the create-stellar-agentic CLI.
 3. Initialize the documented starter/reference project.
 4. Use the supported workflow to create or refine a Soroban contract and Stellar SDK interaction.
 5. Run the documented build, formatting/linting, unit, and Soroban contract tests successfully.
@@ -436,7 +436,7 @@ Completion of the milestone will be demonstrated through:
 - MIT License.
 - Tagged public release.
 - Published Stellar Forge Skill and documented Claude Code loading procedure.
-- Companion create-stellar-forge CLI.
+- Companion create-stellar-agentic CLI.
 - Starter/reference project containing Soroban + Stellar SDK integration.
 - Automated build, lint/format, unit, and Soroban test output.
 - Evaluation workflow output showing pass/fail checks.

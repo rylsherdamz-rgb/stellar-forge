@@ -149,15 +149,15 @@ export function cmdList(args) {
   }
 
   console.log(`\n  ${color("Usage", "bold")}`);
-  console.log(`    ${color("npx create-stellar-forge skills add <name>", "cyan")}  ${color("Install a skill", "dim")}`);
-  console.log(`    ${color("npx create-stellar-forge skills install-all", "cyan")}  ${color("Install all skills", "dim")}`);
+  console.log(`    ${color("npx create-stellar-agentic skills add <name>", "cyan")}  ${color("Install a skill", "dim")}`);
+  console.log(`    ${color("npx create-stellar-agentic skills install-all", "cyan")}  ${color("Install all skills", "dim")}`);
   console.log();
 }
 
 export function cmdAdd(names) {
   if (!names || names.length === 0) {
     logError("No skill name provided");
-    console.log(`  ${color("Usage:", "bold")} ${color("npx create-stellar-forge skills add <skill-name>", "cyan")}`);
+    console.log(`  ${color("Usage:", "bold")} ${color("npx create-stellar-agentic skills add <skill-name>", "cyan")}`);
     console.log(`  ${color("Available:", "bold")} ${listAvailable().join(", ")}`);
     console.log();
     process.exit(1);

@@ -24,7 +24,7 @@ tags:
 homepage: https://github.com/rylsherdamz-rgb/stellar-forge
 ---
 
-# Stellar Forge
+# Stellar Agentic Framework
 
 Build production Stellar dApps with an eval-driven, multi-agent coding harness.
 
@@ -58,7 +58,7 @@ User Request → Route to Agents → Parallel Build → Verify with Evals → Re
 ### Install the Framework
 
 ```bash
-npx create-stellar-forge my-dapp
+npx create-stellar-agentic my-dapp
 cd my-dapp
 npm install
 ```
@@ -68,7 +68,7 @@ This scaffolds a full project with contracts, frontend, and backend templates.
 ### Or Install as a Skill Only
 
 ```bash
-npx create-stellar-forge --skill-only .
+npx create-stellar-agentic --skill-only .
 ```
 
 Or from the registry:

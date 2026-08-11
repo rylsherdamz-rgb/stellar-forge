@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in the Stellar Forge
+about: Report a bug in the Stellar Agentic Framework
 title: "[BUG] "
 labels: bug
 assignees: rylsherdamz-rgb

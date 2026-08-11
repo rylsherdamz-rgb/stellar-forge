@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in the Stellar Forge. This document covers how to contribute effectively.
+Thanks for your interest in the Stellar Agentic Framework. This document covers how to contribute effectively.
 
 ## Table of Contents
 
@@ -40,7 +40,7 @@ npx skills add ./ -g --agent claude-code
 2. Create a branch: feat/my-change or fix/my-change
 3. Make your changes
 4. Run validation: npm run validate
-5. Test with a scaffold: npx create-stellar-forge test-$(whoami) --yes
+5. Test with a scaffold: npx create-stellar-agentic test-$(whoami) --yes
 6. Open a pull request
 ```
 
@@ -60,7 +60,7 @@ Checks:
 ### Test a Scaffold
 
 ```bash
-npx create-stellar-forge test-my-feature --yes --no-install
+npx create-stellar-agentic test-my-feature --yes --no-install
 ```
 
 ## Adding an Agent
@@ -113,7 +113,7 @@ Pass if all checks pass. Fail otherwise. Max 3 retries.
 
 ## Modifying Templates
 
-Templates live in `templates/`. Changes here affect what `npx create-stellar-forge` scaffolds.
+Templates live in `templates/`. Changes here affect what `npx create-stellar-agentic` scaffolds.
 
 - Frontend components go in `templates/frontend/`
 - Contract code goes in `templates/contracts/`
@@ -141,15 +141,15 @@ skills/<name>/
 2. Register in:
    - `CLAUDE.md` — add to Skill Boot list
    - `SKILL.md` — add to skills section
-   - `packages/create-stellar-forge/index.mjs` — add to `REQUIRED_SKILLS` and update count
+   - `packages/create-stellar-agentic/index.mjs` — add to `REQUIRED_SKILLS` and update count
    - `evals/02-frontend-eval.md` — add design eval criteria if applicable
 
 ## CLI Changes
 
-The CLI lives in `packages/create-stellar-forge/index.mjs`. Test with:
+The CLI lives in `packages/create-stellar-agentic/index.mjs`. Test with:
 
 ```bash
-node packages/create-stellar-forge/index.mjs test-cli --yes --no-install
+node packages/create-stellar-agentic/index.mjs test-cli --yes --no-install
 ```
 
 ## Pull Request Process
@@ -171,7 +171,7 @@ refactor: restructure A module
 
 ## Release Process
 
-1. Update version in `SKILL.md` frontmatter, `package.json`, and `packages/create-stellar-forge/package.json`
+1. Update version in `SKILL.md` frontmatter, `package.json`, and `packages/create-stellar-agentic/package.json`
 2. Create a GitHub release with release notes
 3. The `publish.yml` workflow validates and optionally publishes the CLI
 

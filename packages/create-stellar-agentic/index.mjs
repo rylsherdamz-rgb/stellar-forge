@@ -17,7 +17,7 @@ const IS_TTY = process.stdout.isTTY;
 
 const BANNER = `
   ╭─────────────────────────────────────────────────╮
-  │  ✦ Stellar Forge ✦                  │
+  │  ✦ Stellar Agentic Framework ✦                  │
   │  Eval-driven multi-agent harness for Stellar dApps│
   ╰─────────────────────────────────────────────────╯
 `;
@@ -159,7 +159,7 @@ function copyFrameworkSkill(targetDir) {
   mkdirSync(join(targetDir, "data/logs"), { recursive: true });
   mkdirSync(join(targetDir, "data/deployments"), { recursive: true });
   writeFileSync(join(targetDir, "data/README.md"),
-    "# Data Directory\n\nPersistent file-based memory for the Stellar Forge.\n");
+    "# Data Directory\n\nPersistent file-based memory for the Stellar Agentic Framework.\n");
   copyDir(join(PKG_ROOT, "scripts"), join(targetDir, "scripts"));
 }
 
@@ -216,12 +216,12 @@ async function main() {
   const args = process.argv.slice(2);
   const usage = `
   ${color("Usage", "bold")}
-    ${color("npx create-stellar-forge <project-name>", "cyan")}              ${color("Scaffold a new project", "dim")}
-    ${color("npx create-stellar-forge skills add <name>", "cyan")}           ${color("Install a skill to ~/.claude/skills/", "dim")}
-    ${color("npx create-stellar-forge skills list", "cyan")}                 ${color("List available and installed skills", "dim")}
-    ${color("npx create-stellar-forge skills install-all", "cyan")}          ${color("Install all framework skills", "dim")}
-    ${color("npx create-stellar-forge --skill-only <dir>", "cyan")}         ${color("Install framework into existing project", "dim")}
-    ${color("npx create-stellar-forge --help", "cyan")}
+    ${color("npx create-stellar-agentic <project-name>", "cyan")}              ${color("Scaffold a new project", "dim")}
+    ${color("npx create-stellar-agentic skills add <name>", "cyan")}           ${color("Install a skill to ~/.claude/skills/", "dim")}
+    ${color("npx create-stellar-agentic skills list", "cyan")}                 ${color("List available and installed skills", "dim")}
+    ${color("npx create-stellar-agentic skills install-all", "cyan")}          ${color("Install all framework skills", "dim")}
+    ${color("npx create-stellar-agentic --skill-only <dir>", "cyan")}         ${color("Install framework into existing project", "dim")}
+    ${color("npx create-stellar-agentic --help", "cyan")}
 
   ${color("Options", "bold")}
     ${color("--skill-only", "yellow")}     Install only the Agentic OS skill files into an existing project
@@ -230,10 +230,10 @@ async function main() {
     ${color("--yes, -y", "yellow")}        Skip all prompts
 
   ${color("Examples", "bold")}
-    ${color("npx create-stellar-forge my-stellar-dapp", "dim")}
-    ${color("npx create-stellar-forge skills add smart-contracts", "dim")}
-    ${color("npx create-stellar-forge skills add graphify data", "dim")}
-    ${color("npx create-stellar-forge . --skill-only", "dim")}
+    ${color("npx create-stellar-agentic my-stellar-dapp", "dim")}
+    ${color("npx create-stellar-agentic skills add smart-contracts", "dim")}
+    ${color("npx create-stellar-agentic skills add graphify data", "dim")}
+    ${color("npx create-stellar-agentic . --skill-only", "dim")}
 `;
 
   if (args.includes("--help") || args.includes("-h")) {
@@ -302,7 +302,7 @@ async function main() {
     logOk("eval criteria per component");
     logOk("data/ directory for project memory");
     await installDependencySkills();
-    console.log(`\n  ${color(symbol("star"), "green")} ${color("Stellar Forge ready!", "bold")}`);
+    console.log(`\n  ${color(symbol("star"), "green")} ${color("Stellar Agentic Framework ready!", "bold")}`);
     console.log(`  ${color("Run /scaffold to generate templates or use agents directly.", "dim")}\n`);
     process.exit(0);
   }
@@ -366,7 +366,7 @@ async function main() {
   const projectName = basename(resolved);
   writeFileSync(join(resolved, "README.md"), `# ${projectName}
 
-Scaffolded with [create-stellar-forge](https://github.com/rylsherdamz-rgb/stellar-forge).
+Scaffolded with [create-stellar-agentic](https://github.com/rylsherdamz-rgb/stellar-forge).
 
 ## Quick Start
 \`\`\`bash
@@ -379,9 +379,9 @@ ${types.includes("contracts") ? "- **contracts/** — Rust smart contracts (soro
 - **evals/** — Evaluation criteria per component
 - **.claude/commands/** — Slash commands for deploy, test-e2e, graphify
 
-## Stellar Forge
+## Stellar Agentic Framework
 
-This project uses the [Stellar Forge](https://github.com/rylsherdamz-rgb/stellar-forge) — an eval-driven, multi-agent harness for building production Stellar dApps.
+This project uses the [Stellar Agentic Framework](https://github.com/rylsherdamz-rgb/stellar-forge) — an eval-driven, multi-agent harness for building production Stellar dApps.
 `);
 
   console.log();

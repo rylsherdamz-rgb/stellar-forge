@@ -1,6 +1,6 @@
 # Data Directory
 
-Persistent file-based memory for the Stellar Forge.
+Persistent file-based memory for the Stellar Agentic Framework.
 
 ```
 data/

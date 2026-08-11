@@ -4,7 +4,7 @@
   "private": true,
   "description": "Eval-driven multi-agent coding harness for building production Stellar dApps. 6 specialist agents, structured evals, Stellar Agentic Kit hooks, MCP integrations, and one-command scaffold.",
   "workspaces": [
-    "packages/create-stellar-forge",
+    "packages/create-stellar-agentic",
     "templates/frontend",
     "templates/backend",
     "tests"

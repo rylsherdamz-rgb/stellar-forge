@@ -36,7 +36,7 @@ const ROUTES = [
 
 const installMatrix = [
   { want: "Add AI orchestration to an existing Stellar project", use: "Skill → npx skills add ..." },
-  { want: "Scaffold a brand-new Stellar dApp monorepo", use: "CLI → npx create-stellar-forge" },
+  { want: "Scaffold a brand-new Stellar dApp monorepo", use: "CLI → npx create-stellar-agentic" },
   { want: "Build a dApp with AI assistance (recommended)", use: "Both — CLI scaffolds, Skill builds" },
   { want: "Use AI agents without Claude Code", use: "CLI only — standalone scaffolding" },
 ];
@@ -150,7 +150,7 @@ export default function Home() {
             </div>
             <div className="hero-cta-group">
               <span className="hero-cta-label">Use standalone</span>
-              <CopyButton getText={() => "npx create-stellar-forge my-dapp"} className="btn btn-primary btn-copy">
+              <CopyButton getText={() => "npx create-stellar-agentic my-dapp"} className="btn btn-primary btn-copy">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
                 Scaffold Project
               </CopyButton>
@@ -332,7 +332,7 @@ export default function Home() {
               <p className="install-desc">Generates a production-ready monorepo: contracts, frontend, backend, CI/CD, and agent files. The CLI auto-installs the Skill too.</p>
               <div className="install-code-block">
                 <div className="install-code-bar">Shell</div>
-                <div className="install-code-body"><span className="cp">$ </span><span className="ccmd">npx create-stellar-forge my-dapp --yes</span><br /><br /><span className="co">  ✔ Scaffolding Stellar Forge dApp...</span><br /><span className="co">  ✔ contracts/hello-world/src/lib.rs</span><br /><span className="co">  ✔ contracts/token/src/lib.rs</span><br /><span className="co">  ✔ frontend/src/app/page.tsx</span><br /><span className="co">  ✔ backend/src/index.ts</span><br /><span className="co">  ✔ All 10 skills installed</span></div>
+                <div className="install-code-body"><span className="cp">$ </span><span className="ccmd">npx create-stellar-agentic my-dapp --yes</span><br /><br /><span className="co">  ✔ Scaffolding Stellar Agentic Framework dApp...</span><br /><span className="co">  ✔ contracts/hello-world/src/lib.rs</span><br /><span className="co">  ✔ contracts/token/src/lib.rs</span><br /><span className="co">  ✔ frontend/src/app/page.tsx</span><br /><span className="co">  ✔ backend/src/index.ts</span><br /><span className="co">  ✔ All 10 skills installed</span></div>
               </div>
               <div className="install-hint">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -394,7 +394,7 @@ export default function Home() {
               <p>Pick your entry point — Skill for AI orchestration, CLI for project scaffolding, or both.</p>
               <div className="step-cmds">
                 <div><span className="step-cmd-prompt">$ </span><span>npx skills add rylsherdamz-rgb/stellar-forge</span></div>
-                <div><span className="step-cmd-prompt">$ </span><span>npx create-stellar-forge my-dapp --yes</span></div>
+                <div><span className="step-cmd-prompt">$ </span><span>npx create-stellar-agentic my-dapp --yes</span></div>
               </div>
             </div>
             <div className="step">
@@ -427,7 +427,7 @@ export default function Home() {
         <div className="container">
           <div className="links">
             <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a>
-            <a href="https://www.npmjs.com/package/create-stellar-forge">npm</a>
+            <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a>
             <a href="https://stellar.org">Stellar</a>
           </div>
           <p>MIT License &middot; v0.3.0</p>

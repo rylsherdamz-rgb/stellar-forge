@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const SUITES = ["x402-flow.mjs", "mpp-charge-flow.mjs", "contract-state.mjs"];
 
-console.log(`Stellar Forge :: framework test suite (${SUITES.length} suites)\n`);
+console.log(`Stellar Agentic Framework :: framework test suite (${SUITES.length} suites)\n`);
 
 let passed = 0;
 let skipped = 0;

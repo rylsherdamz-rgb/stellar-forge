@@ -10,7 +10,7 @@ on:
 
 jobs:
   publish-cli:
-    name: Publish create-stellar-forge
+    name: Publish create-stellar-agentic
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,20 +33,20 @@ jobs:
           else
             echo "Not a version tag ($GITHUB_REF_NAME), skipping version sync"
           fi
-        working-directory: packages/create-stellar-forge
+        working-directory: packages/create-stellar-agentic
 
       - name: Prepare package files
         run: |
           for dir in templates skills agents evals data scripts .claude .claude-plugin; do
-            cp -r "$dir" packages/create-stellar-forge/
+            cp -r "$dir" packages/create-stellar-agentic/
           done
-          cp SKILL.md CLAUDE.md README.md .env.example .mcp.json packages/create-stellar-forge/
+          cp SKILL.md CLAUDE.md README.md .env.example .mcp.json packages/create-stellar-agentic/
 
       - name: Publish to npmjs.org
         run: |
-          node -e "const p=require('./package.json'); p.name='create-stellar-forge'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)+'\n')"
+          node -e "const p=require('./package.json'); p.name='create-stellar-agentic'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)+'\n')"
           npm publish --provenance --access public
-        working-directory: packages/create-stellar-forge
+        working-directory: packages/create-stellar-agentic
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
