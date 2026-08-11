@@ -2,16 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stellar Agentic Framework — Build Stellar dApps with AI Agents",
+  title: "Stellar Forge — Build Stellar dApps with AI Agents",
   description:
-    "An eval-driven, multi-agent coding harness for building production Stellar dApps. Scaffold contracts, frontends, backends, and x402 payments — all from a single command.",
+    "An open-source reference implementation for AI-assisted Stellar development. Install the Skill, scaffold a project with the create-stellar-forge CLI, and build Soroban contracts + Stellar SDK apps verified by structured evals.",
   keywords: [
     "stellar", "soroban", "smart contracts", "dapp", "ai agents",
-    "claude code", "x402", "stellar wallets kit", "blockchain",
+    "claude code", "open code", "x402", "stellar wallets kit", "blockchain",
+    "create-stellar-forge", "stellar forge",
   ],
   openGraph: {
-    title: "Stellar Agentic Framework",
-    description: "Build Stellar dApps with AI agents that write, verify, and deploy code.",
+    title: "Stellar Forge",
+    description: "Installable Skill + scaffolding CLI for AI-assisted Stellar development, validated on Stellar Testnet.",
   },
   robots: { index: true, follow: true },
   icons: { icon: "/favicon.svg" },

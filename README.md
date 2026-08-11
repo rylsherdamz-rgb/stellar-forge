@@ -1,24 +1,24 @@
 <div align="center">
 
-  <img src="https://stellar-agentic-framework.vercel.app/favicon.svg" width="48" height="48" alt="Stellar Agentic Framework">
+  <img src="https://stellar-agentic-framework.vercel.app/favicon.svg" width="48" height="48" alt="Stellar Forge">
 
   <br>
 
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/stellar-agentic--framework-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=1a1a2e">
-    <img alt="Stellar Agentic Framework" src="https://img.shields.io/badge/stellar-agentic--framework-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=ffffff">
+    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/stellar--forge-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=1a1a2e">
+    <img alt="Stellar Forge" src="https://img.shields.io/badge/stellar--forge-7B3FE4?style=for-the-badge&logo=stellar&logoColor=white&labelColor=ffffff">
   </picture>
 
   <br>
 
-  <a href="https://github.com/rylsherdamz-rgb/stellar-agentic-framework">
-    <img src="https://img.shields.io/github/last-commit/rylsherdamz-rgb/stellar-agentic-framework?color=7B3FE4&logo=github&label=updated">
+  <a href="https://github.com/rylsherdamz-rgb/stellar-forge">
+    <img src="https://img.shields.io/github/last-commit/rylsherdamz-rgb/stellar-forge?color=7B3FE4&logo=github&label=updated">
   </a>
-  <a href="https://github.com/rylsherdamz-rgb/stellar-agentic-framework/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/rylsherdamz-rgb/stellar-agentic-framework/ci.yml?branch=master&label=ci&logo=github">
+  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/rylsherdamz-rgb/stellar-forge/ci.yml?branch=master&label=ci&logo=github">
   </a>
-  <a href="https://www.npmjs.com/package/create-stellar-agentic">
-    <img src="https://img.shields.io/npm/v/create-stellar-agentic?color=blue&logo=npm&label=cli">
+  <a href="https://www.npmjs.com/package/create-stellar-forge">
+    <img src="https://img.shields.io/npm/v/create-stellar-forge?color=blue&logo=npm&label=cli">
   </a>
   <a href="https://stellar-agentic-framework.vercel.app">
     <img src="https://img.shields.io/badge/website-7B3FE4?logo=vercel&logoColor=white&label=docs">
@@ -33,21 +33,21 @@
   <br><br>
 
   <p><b>AI orchestration + project scaffolding for Stellar dApps.</b><br>
-  Six specialist agents write, verify, and deploy contracts, frontends, and payment APIs — no context-switching.<br>
+  An open-source reference implementation for AI-assisted Stellar development — six specialist agents write, verify, and deploy contracts, frontends, and payment APIs, no context-switching.<br>
   <a href="https://stellar-agentic-framework.vercel.app" style="color:#7c3aed;text-decoration:none;">stellar-agentic-framework.vercel.app</a> · <a href="https://x.com/ChichiCode0/status/2084510317862895653" style="color:#7c3aed;text-decoration:none;">▶ Watch the 60s promo</a></p>
 
   <table>
     <tr>
       <td align="center"><b>🧠 Agent Skill</b><br><sub>For Claude Code / OpenCode — 6 agents<br>that build your dApp from one prompt</sub></td>
       <td width="30"></td>
-      <td align="center"><b>📦 Scaffold CLI</b><br><sub><code>npx create-stellar-agentic</code><br>Production monorepo in one command</sub></td>
+      <td align="center"><b>📦 Scaffold CLI</b><br><sub><code>npx create-stellar-forge</code><br>Production monorepo in one command</sub></td>
     </tr>
   </table>
 
   <br>
 
   <video width="840" controls muted playsinline preload="metadata" poster="https://stellar-agentic-framework.vercel.app/promo-poster.png" style="max-width:100%;border-radius:14px;border:1px solid #1c1c2e;box-shadow:0 24px 80px rgba(0,0,0,.5)">
-    <source src="https://github.com/rylsherdamz-rgb/stellar-agentic-framework/raw/master/media/promo.mp4" type="video/mp4">
+    <source src="https://github.com/rylsherdamz-rgb/stellar-forge/raw/master/media/promo.mp4" type="video/mp4">
   </video>
 </div>
 
@@ -55,13 +55,15 @@
 
 ## What Is This?
 
-The Stellar Agentic Framework is **two things that work together**:
+The Stellar Forge is **two things that work together**:
 
 1. **An AI orchestration layer** (the "Skill") — a set of six specialist agent definitions + a graph engine kernel (`CLAUDE.md`) that routes your requests to the right agents, verifies their output against structured evals, and steers on failure. It runs inside Claude Code or OpenCode.
 
-2. **A project scaffold CLI** (`create-stellar-agentic`) — generates a production-ready Stellar monorepo with contracts, frontend, backend, CI/CD, and agent files pre-configured. If you use Claude Code, it auto-installs the Skill too.
+2. **A project scaffold CLI** (`create-stellar-forge`) — generates a production-ready Stellar monorepo with contracts, frontend, backend, CI/CD, and agent files pre-configured. If you use Claude Code, it auto-installs the Skill too.
 
 **The CLI bootstraps the project. The Skill builds it.** You can use either independently — together they're a complete workflow.
+
+> **Stellar Forge** is an open-source reference implementation (MIT) demonstrating a supported AI-assisted Stellar development workflow: install the Skill → scaffold with the CLI → build & refine with AI assistance → evaluate against structured checks → validate on Stellar Testnet. See the [Instawards Statement of Work](docs/INSTAWARD-SOW.md) for the full scope.
 
 ---
 
@@ -93,7 +95,7 @@ This framework **embeds that domain knowledge** into 10 installable skills, 6 ag
 ## Architecture
 
 ```
-stellar-agentic-framework/
+stellar-forge/
 ├── SKILL.md          # Entry point — loads the graph engine
 ├── CLAUDE.md         # Graph engine kernel — routes tasks as work graphs
 │
@@ -128,7 +130,7 @@ stellar-agentic-framework/
 │   ├── backend/
 │   └── cicd/
 │
-├── packages/create-stellar-agentic/  # npm-published CLI
+├── packages/create-stellar-forge/  # npm-published CLI
 └── .claude/commands/  # Slash commands
 ```
 
@@ -201,8 +203,8 @@ You can customize, add, or remove agents — each is just a markdown file in `ag
 
 | I want to... | Install this |
 |---|---|
-| Add AI orchestration to an existing Stellar project | **Skill** → `npx skills add rylsherdamz-rgb/stellar-agentic-framework` |
-| Scaffold a brand-new Stellar dApp monorepo | **CLI** → `npx create-stellar-agentic my-dapp` |
+| Add AI orchestration to an existing Stellar project | **Skill** → `npx skills add rylsherdamz-rgb/stellar-forge` |
+| Scaffold a brand-new Stellar dApp monorepo | **CLI** → `npx create-stellar-forge my-dapp` |
 | Build a dApp with AI assistance (recommended) | **Both** — CLI scaffolds the project, Skill builds it |
 | Use AI agents without Claude Code | **CLI only** — standalone scaffolding, no AI required |
 
@@ -210,11 +212,11 @@ You can customize, add, or remove agents — each is just a markdown file in `ag
 
 ```bash
 # For Claude Code or OpenCode
-npx skills add rylsherdamz-rgb/stellar-agentic-framework
+npx skills add rylsherdamz-rgb/stellar-forge
 
 # Specify the agent
-npx skills add rylsherdamz-rgb/stellar-agentic-framework --agent claude-code
-npx skills add rylsherdamz-rgb/stellar-agentic-framework --agent opencode
+npx skills add rylsherdamz-rgb/stellar-forge --agent claude-code
+npx skills add rylsherdamz-rgb/stellar-forge --agent opencode
 ```
 
 After installing, start a session and prompt:
@@ -226,7 +228,7 @@ The graph engine routes to the relevant agents, each with domain skills and eval
 ### CLI (Project Scaffold)
 
 ```bash
-npx create-stellar-agentic my-dapp
+npx create-stellar-forge my-dapp
 ```
 
 This generates a production-ready monorepo:
@@ -244,7 +246,7 @@ my-dapp/
 └── SKILL.md            # Orchestration entry point
 ```
 
-**Killer feature: the CLI automatically installs the Skill.** When you run `npx create-stellar-agentic`, it copies all 10 skills to `~/.claude/skills/` and sets up the `CLAUDE.md` kernel. Opening the generated project in Claude Code instantly activates the full multi-agent harness — no extra steps.
+**Killer feature: the CLI automatically installs the Skill.** When you run `npx create-stellar-forge`, it copies all 10 skills to `~/.claude/skills/` and sets up the `CLAUDE.md` kernel. Opening the generated project in Claude Code instantly activates the full multi-agent harness — no extra steps.
 
 ### CLI Options
 
@@ -316,7 +318,7 @@ Test-gated deployment — `cargo test` must pass or the deploy aborts.
 ## FAQ
 
 **Can I use this without Claude Code?**  
-Yes. `npx create-stellar-agentic` works standalone. The graph engine only activates in Claude Code sessions.
+Yes. `npx create-stellar-forge` works standalone. The graph engine only activates in Claude Code sessions.
 
 **What networks are supported?**  
 Testnet (default), mainnet, and local/testcontainer. Mainnet requires explicit env opt-in.
@@ -334,6 +336,7 @@ Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for 
 
 ## Related
 
+- [Instawards Statement of Work (SOW)](docs/INSTAWARD-SOW.md)
 - [Documentation & Demo](https://stellar-agentic-framework.vercel.app)
 - [Stellar Documentation](https://developers.stellar.org/docs)
 - [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit)
@@ -343,5 +346,5 @@ Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for 
 ---
 
 <p align="center">
-  <sub>Built with the Stellar Agentic Framework · <a href="https://stellar-agentic-framework.vercel.app">Website</a> · <a href="https://github.com/rylsherdamz-rgb/stellar-agentic-framework">GitHub</a> · <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a></sub>
+  <sub>Built with the Stellar Forge · <a href="https://stellar-agentic-framework.vercel.app">Website</a> · <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a> · <a href="https://www.npmjs.com/package/create-stellar-forge">npm</a></sub>
 </p>
