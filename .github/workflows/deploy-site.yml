@@ -1,0 +1,32 @@
+name: Deploy Site
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy docs site to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Link to Vercel project
+        run: vercel link --yes --project prj_qnJ4ZpzZZyVbA5WaVpi508stkqiv --team team_eIVMwD3Mb1GLj54SAcSzpagR --cwd site --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to production
+        run: vercel deploy --prod --yes --cwd site --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
