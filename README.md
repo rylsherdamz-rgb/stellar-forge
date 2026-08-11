@@ -336,7 +336,7 @@ Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for 
 
 ## Related
 
-- [Instawards Statement of Work (SOW)](docs/INSTAWARD-SOW.md)
+
 - [Documentation & Demo](https://stellar-agentic-framework.vercel.app)
 - [Stellar Documentation](https://developers.stellar.org/docs)
 - [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit)
