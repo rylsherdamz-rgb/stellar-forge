@@ -1,6 +1,6 @@
 # /promotion
 
-Generate a promotional video for the Stellar Agentic Framework using Remotion + ElevenLabs voiceover.
+Generate a promotional video for the Stellar Forge using Remotion + ElevenLabs voiceover.
 
 ## Usage
 ```
@@ -14,7 +14,7 @@ Optional scene-focus: `all` (default), `skill`, `cli`, `framework`
 - ElevenLabs voice ID configured in `promo/generate-voiceover.mjs` or `.env`
 
 ## Steps
-1. Read `promo/src/scenes.ts` — confirm the script covers: what the framework does, the Skill (`npx skills add`), the CLI (`npx create-stellar-agentic`)
+1. Read `promo/src/scenes.ts` — confirm the script covers: what the framework does, the Skill (`npx skills add`), the CLI (`npx create-stellar-forge`)
 2. Generate voiceover audio:
    ```bash
    cd promo && node generate-voiceover.mjs

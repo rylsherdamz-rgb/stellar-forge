@@ -1,11 +1,11 @@
 {
-  "name": "create-stellar-agentic",
-  "version": "0.2.0",
+  "name": "create-stellar-forge",
+  "version": "0.3.0",
   "description": "Eval-driven agentic harness for building production Stellar dApps. 6 specialist agents, 5 eval definitions, full contract/frontend/backend templates, and npx CLI scaffolding with npx skill support. https://stellar-agentic-framework.vercel.app",
   "type": "module",
   "bin": {
-    "create-stellar-agentic": "index.mjs",
-    "stellar-agentic": "index.mjs"
+    "create-stellar-forge": "index.mjs",
+    "stellar-forge": "index.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -27,12 +27,12 @@
   ],
   "homepage": "https://stellar-agentic-framework.vercel.app",
   "bugs": {
-    "url": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework/issues"
+    "url": "https://github.com/rylsherdamz-rgb/stellar-forge/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework"
+    "url": "https://github.com/rylsherdamz-rgb/stellar-forge"
   },
   "publishConfig": {
     "access": "public"

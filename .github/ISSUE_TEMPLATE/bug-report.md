@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in the Stellar Agentic Framework
+about: Report a bug in the Stellar Forge
 title: "[BUG] "
 labels: bug
 assignees: rylsherdamz-rgb
@@ -12,7 +12,7 @@ A clear and concise description of the bug.
 
 ## Reproduction Steps
 
-1. Install: `npx skills add rylsherdamz-rgb/stellar-agentic-framework`
+1. Install: `npx skills add rylsherdamz-rgb/stellar-forge`
 2. Run: '...'
 3. See error
 

@@ -1,12 +1,12 @@
 ---
-name: stellar-agentic-framework
+name: stellar-forge
 description: >
   Eval-driven coding harness for building production Stellar dApps. Routes
   tasks to 6 specialist agents, verifies output with structured evals, steers
   on failure, e2e-tests with Stellar Agentic Kit hooks, and knowledge-graphs
   every project. Use when building any Stellar app — tokens, DeFi, NFTs,
   payment APIs, or full dApps with smart contracts + frontend + backend.
-version: 1.0.0
+version: 1.1.0
 author: rylsherdamz-rgb
 tags:
   - stellar
@@ -21,10 +21,10 @@ tags:
   - x402
   - mpp
   - agentic-payments
-homepage: https://github.com/rylsherdamz-rgb/stellar-agentic-framework
+homepage: https://github.com/rylsherdamz-rgb/stellar-forge
 ---
 
-# Stellar Agentic Framework
+# Stellar Forge
 
 Build production Stellar dApps with an eval-driven, multi-agent coding harness.
 
@@ -58,7 +58,7 @@ User Request → Route to Agents → Parallel Build → Verify with Evals → Re
 ### Install the Framework
 
 ```bash
-npx create-stellar-agentic my-dapp
+npx create-stellar-forge my-dapp
 cd my-dapp
 npm install
 ```
@@ -68,13 +68,13 @@ This scaffolds a full project with contracts, frontend, and backend templates.
 ### Or Install as a Skill Only
 
 ```bash
-npx create-stellar-agentic --skill-only .
+npx create-stellar-forge --skill-only .
 ```
 
 Or from the registry:
 
 ```bash
-npx skills add rylsherdamz-rgb/stellar-agentic-framework
+npx skills add rylsherdamz-rgb/stellar-forge
 ```
 
 ## Workflow

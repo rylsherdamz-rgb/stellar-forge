@@ -20,7 +20,7 @@ Closes # (issue)
 - [ ] Eval: `evals/*.md`
 - [ ] Template: `templates/*`
 - [ ] Skill: `skills/*/SKILL.md`
-- [ ] CLI: `packages/create-stellar-agentic/*`
+- [ ] CLI: `packages/create-stellar-forge/*`
 - [ ] MCP: `.mcp.json`
 - [ ] Docs: `README.md`, `references/*`
 

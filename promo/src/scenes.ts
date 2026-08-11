@@ -28,10 +28,10 @@ export const SCENES: Scene[] = [
   {
     id: "02-framework",
     kind: "framework",
-    title: "The Stellar Agentic Framework",
+    title: "The Stellar Forge",
     subtitle: "A graph engine routes your task to six specialist agents — each verifying its output against evals before moving on.",
     voiceover:
-      "The Stellar Agentic Framework gives you a graph engine that routes your task to six specialist agents: contracts, frontend, backend, payments, devops, and zero knowledge. Each verifies its output against evals before the work moves on.",
+      "The Stellar Forge gives you a graph engine that routes your task to six specialist agents: contracts, frontend, backend, payments, devops, and zero knowledge. Each verifies its output against evals before the work moves on.",
     audioFile: "voiceover/02-framework.mp3",
     defaultFrames: FPS * 12,
   },
@@ -41,7 +41,7 @@ export const SCENES: Scene[] = [
     title: "Install the Skill",
     subtitle: "AI orchestration for Claude Code and OpenCode.",
     code: [
-      "npx skills add rylsherdamz-rgb/stellar-agentic-framework",
+      "npx skills add rylsherdamz-rgb/stellar-forge",
     ],
     prompt: true,
     voiceover:
@@ -55,7 +55,7 @@ export const SCENES: Scene[] = [
     title: "Or scaffold with the CLI",
     subtitle: "A production-ready monorepo in one command.",
     code: [
-      "npx create-stellar-agentic my-dapp --yes",
+      "npx create-stellar-forge my-dapp --yes",
       "✔ contracts/   hello-world + token",
       "✔ frontend/    Next.js + Wallets Kit",
       "✔ backend/     Express + x402 payments",
@@ -82,7 +82,7 @@ export const SCENES: Scene[] = [
     kind: "cta",
     title: "Ship on Stellar in minutes.",
     subtitle: "stellar-agentic-framework.vercel.app",
-    code: ["npx skills add rylsherdamz-rgb/stellar-agentic-framework"],
+    code: ["npx skills add rylsherdamz-rgb/stellar-forge"],
     prompt: true,
     voiceover:
       "Get started today at stellar agentic framework dot vercel dot app.",

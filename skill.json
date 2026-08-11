@@ -1,16 +1,16 @@
 {
-  "name": "stellar-agentic-framework",
-  "version": "0.1.0",
+  "name": "stellar-forge",
+  "version": "0.3.0",
   "description": "Eval-driven agentic harness for building production Stellar dApps with 6 specialist agents, structured evals, knowledge graphs, and npx scaffolding",
   "license": "MIT",
-  "homepage": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework",
+  "homepage": "https://github.com/rylsherdamz-rgb/stellar-forge",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework"
+    "url": "https://github.com/rylsherdamz-rgb/stellar-forge"
   },
   "author": {
-    "name": "Stellar Agentic Framework",
-    "url": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework"
+    "name": "Stellar Forge",
+    "url": "https://github.com/rylsherdamz-rgb/stellar-forge"
   },
   "tags": [
     "stellar",
@@ -25,7 +25,7 @@
   "categories": ["blockchain", "development", "smart-contracts", "frontend", "backend"],
   "skills": [
     {
-      "name": "stellar-agentic-orchestrator",
+      "name": "stellar-forge-orchestrator",
       "path": "SKILL.md",
       "description": "Main orchestration skill that loads 10 Stellar skills, routes tasks to 6 specialist agents, and verifies output with structured evals",
       "agents": ["claude-code", "opencode"]

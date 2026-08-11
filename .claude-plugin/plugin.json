@@ -1,13 +1,13 @@
 {
-  "name": "stellar-agentic",
-  "version": "0.1.0",
+  "name": "stellar-forge",
+  "version": "0.3.0",
   "description": "Eval-driven multi-agent harness for building production Stellar dApps — 6 specialist agents, structured evals, agentic kit hooks, MCP integrations",
   "author": {
-    "name": "Stellar Agentic Framework",
-    "url": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework"
+    "name": "Stellar Forge",
+    "url": "https://github.com/rylsherdamz-rgb/stellar-forge"
   },
-  "homepage": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework",
-  "repository": "https://github.com/rylsherdamz-rgb/stellar-agentic-framework",
+  "homepage": "https://github.com/rylsherdamz-rgb/stellar-forge",
+  "repository": "https://github.com/rylsherdamz-rgb/stellar-forge",
   "license": "MIT",
   "keywords": [
     "stellar",

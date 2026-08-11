@@ -17,7 +17,7 @@ tags:
   - blockchain
   - wallet
   - dapp
-homepage: https://github.com/rylsherdamz-rgb/stellar-agentic-framework
+homepage: https://github.com/rylsherdamz-rgb/stellar-forge
 ---
 
 # Frontend Design — Stellar dApp UI

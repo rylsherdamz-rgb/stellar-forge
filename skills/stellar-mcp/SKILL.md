@@ -16,7 +16,7 @@ tags:
   - playwright
   - filesystem
 requires:
-  - stellar-agentic-framework
+  - stellar-forge
 ---
 
 # Stellar MCP Tools

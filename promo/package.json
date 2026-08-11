@@ -1,7 +1,7 @@
 {
-  "name": "stellar-agentic-promo",
+  "name": "stellar-forge-promo",
   "version": "1.0.0",
-  "description": "Promotional video for the Stellar Agentic Framework — Remotion + ElevenLabs voiceover",
+  "description": "Promotional video for the Stellar Forge — Remotion + ElevenLabs voiceover",
   "private": true,
   "type": "module",
   "scripts": {

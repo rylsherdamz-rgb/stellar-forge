@@ -8,13 +8,13 @@
 
 ## Reporting a Vulnerability
 
-The Stellar Agentic Framework is a development harness for building Stellar dApps. It does not handle production secrets, user funds, or private keys directly.
+The Stellar Forge is a development harness for building Stellar dApps. It does not handle production secrets, user funds, or private keys directly.
 
 If you discover a security issue:
 
 1. **Do not** open a public GitHub issue
 2. **Do not** post details in public forums
-3. Email the maintainer directly or open a [GitHub Security Advisory](https://github.com/rylsherdamz-rgb/stellar-agentic-framework/security/advisories/new)
+3. Email the maintainer directly or open a [GitHub Security Advisory](https://github.com/rylsherdamz-rgb/stellar-forge/security/advisories/new)
 
 ### What to Report
 
@@ -47,7 +47,7 @@ This policy covers:
 - `SKILL.md` and `CLAUDE.md` (harness logic)
 - Agent definitions in `agents/`
 - Templates in `templates/`
-- CLI in `packages/create-stellar-agentic/`
+- CLI in `packages/create-stellar-forge/`
 - Skill files in `skills/`
 
 Excluded:
