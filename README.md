@@ -20,6 +20,12 @@
   <a href="https://www.npmjs.com/package/create-stellar-agentic">
     <img src="https://img.shields.io/npm/v/create-stellar-agentic?color=blue&logo=npm&label=cli">
   </a>
+  <a href="https://www.npmjs.com/package/create-stellar-agentic">
+    <img src="https://img.shields.io/npm/dw/create-stellar-agentic?color=blue&logo=npm&label=downloads%2Fweek">
+  </a>
+  <a href="https://www.npmjs.com/package/create-stellar-agentic">
+    <img src="https://img.shields.io/npm/dt/create-stellar-agentic?color=blue&logo=npm&label=total%20downloads">
+  </a>
   <a href="https://stellar-agentic-framework.vercel.app">
     <img src="https://img.shields.io/badge/website-7B3FE4?logo=vercel&logoColor=white&label=docs">
   </a>

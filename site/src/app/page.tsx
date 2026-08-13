@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Box, Layout, Server, CreditCard, ShieldCheck, GitBranch, ArrowRight, Copy, Check, Cpu, Network, Workflow, Zap, BookOpen, FileCode } from "lucide-react";
+import StatsBar, { StarButton } from "../components/RepoStats";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -85,6 +86,79 @@ function Logomark({ size = 24 }: { size?: number }) {
   );
 }
 
+const PKG_TABS = [
+  {
+    id: "npx",
+    label: "npx",
+    skill: "npx skills add rylsherdamz-rgb/stellar-forge",
+    cli:   "npx create-stellar-agentic my-dapp --yes",
+  },
+  {
+    id: "npm",
+    label: "npm",
+    skill: "npm exec skills add rylsherdamz-rgb/stellar-forge",
+    cli:   "npm create stellar-agentic@latest my-dapp -- --yes",
+  },
+  {
+    id: "pnpm",
+    label: "pnpm",
+    skill: "pnpm dlx skills add rylsherdamz-rgb/stellar-forge",
+    cli:   "pnpm create stellar-agentic my-dapp --yes",
+  },
+  {
+    id: "yarn",
+    label: "yarn",
+    skill: "yarn dlx skills add rylsherdamz-rgb/stellar-forge",
+    cli:   "yarn create stellar-agentic my-dapp --yes",
+  },
+];
+
+function HeroInstallBlock() {
+  const [active, setActive] = useState("npx");
+  const [flashedSkill, setFlashedSkill] = useState(false);
+  const [flashedCli, setFlashedCli] = useState(false);
+  const tab = PKG_TABS.find((t) => t.id === active)!;
+
+  const copy = (text: string, which: "skill" | "cli") => {
+    navigator.clipboard.writeText(text);
+    if (which === "skill") { setFlashedSkill(true); setTimeout(() => setFlashedSkill(false), 1200); }
+    else                   { setFlashedCli(true);   setTimeout(() => setFlashedCli(false),   1200); }
+  };
+
+  return (
+    <div className="hero-install">
+      <div className="hero-install-tabs">
+        {PKG_TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`hero-install-tab${active === t.id ? " active" : ""}`}
+            onClick={() => setActive(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="hero-install-body">
+        <button className="hero-install-row" onClick={() => copy(tab.skill, "skill")} title="Click to copy">
+          <span className="hero-install-badge">Skill</span>
+          <code className={`hero-install-cmd${flashedSkill ? " flashed" : ""}`}>
+            {flashedSkill ? "Copied!" : tab.skill}
+          </code>
+          <Copy size={13} style={{ flexShrink: 0, color: flashedSkill ? "var(--green)" : "var(--text-muted)", transition: "color .15s" }} />
+        </button>
+        <div className="hero-install-divider" />
+        <button className="hero-install-row" onClick={() => copy(tab.cli, "cli")} title="Click to copy">
+          <span className="hero-install-badge">CLI</span>
+          <code className={`hero-install-cmd${flashedCli ? " flashed" : ""}`}>
+            {flashedCli ? "Copied!" : tab.cli}
+          </code>
+          <Copy size={13} style={{ flexShrink: 0, color: flashedCli ? "var(--green)" : "var(--text-muted)", transition: "color .15s" }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const heroRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
@@ -126,6 +200,7 @@ export default function Home() {
           <div className="links">
             {ROUTES.map((r) => <a key={r.label} href={r.href}>{r.label}</a>)}
             <a href="#install" className="nav-cta">Get Started</a>
+            <StarButton />
           </div>
         </div>
       </nav>
@@ -140,37 +215,8 @@ export default function Home() {
             contracts, frontends, and payment APIs — no context-switching. The CLI bootstraps the project.
             The Skill builds it. Use either, or both.
           </p>
-          <div className="hero-actions">
-            <div className="hero-cta-group">
-              <span className="hero-cta-label">Use with Claude Code / OpenCode</span>
-              <CopyButton getText={() => "npx skills add rylsherdamz-rgb/stellar-forge"} className="btn btn-primary btn-copy">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                Install Skill
-              </CopyButton>
-            </div>
-            <div className="hero-cta-group">
-              <span className="hero-cta-label">Use standalone</span>
-              <CopyButton getText={() => "npx create-stellar-agentic my-dapp"} className="btn btn-primary btn-copy">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-                Scaffold Project
-              </CopyButton>
-            </div>
-            <div className="hero-cta-group">
-              <span className="hero-cta-label">See it in action</span>
-              <a href="https://x.com/ChichiCode0/status/2084510317862895653" target="_blank" rel="noreferrer" className="btn btn-secondary btn-copy">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                Watch promo (60s)
-              </a>
-            </div>
-          </div>
-          <div className="hero-mini-term">
-            <div className="bar">
-              <span className="dot" /><span className="dot" /><span className="dot" />
-            </div>
-            <div className="body">
-              Graph engine routes task to <span>@stellar-contracts</span> → <span>@stellar-frontend</span> → <span>@stellar-backend</span> — each verified against evals, max 3 retries.
-            </div>
-          </div>
+          <HeroInstallBlock />
+          <StatsBar />
         </div>
       </section>
 
