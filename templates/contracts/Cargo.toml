@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["hello-world", "token"]
+members = ["hello-world", "token", "vault"]
 
 [profile.release]
 opt-level = "z"
