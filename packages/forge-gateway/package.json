@@ -1,0 +1,23 @@
+{
+  "name": "forge-gateway",
+  "version": "0.1.0",
+  "description": "Stellar context MCP gateway for AI agents — catalog search + sandboxed execution over one remote endpoint. Docs, skills, playbooks, ecosystem data, community intel.",
+  "type": "module",
+  "bin": {
+    "forge-gateway": "src/server.mjs"
+  },
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test --test-force-exit test/gateway.test.mjs",
+    "check-live": "node scripts/check-live.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.0",
+    "express": "^5.0.0",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

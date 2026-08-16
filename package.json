@@ -5,6 +5,7 @@
   "description": "Eval-driven multi-agent coding harness for building production Stellar dApps. 6 specialist agents, structured evals, Stellar Agentic Kit hooks, MCP integrations, and one-command scaffold.",
   "workspaces": [
     "packages/create-stellar-agentic",
+    "packages/forge-gateway",
     "templates/frontend",
     "templates/backend",
     "tests"
@@ -13,6 +14,9 @@
     "scaffold": "node scripts/scaffold.mjs",
     "graphify": "graphify . --no-viz",
     "test": "node tests/run.mjs",
+    "gateway": "npm run start -w forge-gateway",
+    "gateway:test": "npm test -w forge-gateway",
+    "gateway:check-live": "npm run check-live -w forge-gateway",
     "lint": "echo 'Framework lint: ok'",
     "validate": "node -e \"console.log('SKILL.md, skill.json, marketplace.json: valid')\""
   },
