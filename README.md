@@ -20,6 +20,12 @@
   <a href="https://www.npmjs.com/package/create-stellar-agentic">
     <img src="https://img.shields.io/npm/v/create-stellar-agentic?color=blue&logo=npm&label=cli">
   </a>
+  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/releases">
+    <img src="https://img.shields.io/github/v/tag/rylsherdamz-rgb/stellar-forge?label=release&color=7B3FE4">
+  </a>
+  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/rylsherdamz-rgb/stellar-forge/publish-npm.yml?branch=master&label=cd&logo=npm&color=blue">
+  </a>
   <a href="https://www.npmjs.com/package/create-stellar-agentic">
     <img src="https://img.shields.io/npm/dw/create-stellar-agentic?color=blue&logo=npm&label=downloads%2Fweek">
   </a>
@@ -131,12 +137,14 @@ stellar-forge/
 │   └── ...
 │
 ├── templates/        # Source templates for CLI scaffold
-│   ├── contracts/
+│   ├── contracts/    # hello-world, token (SEP-41), vault (milestone escrow)
 │   ├── frontend/
 │   ├── backend/
 │   └── cicd/
 │
-├── packages/create-stellar-agentic/  # npm-published CLI
+├── packages/
+│   ├── create-stellar-agentic/  # npm-published CLI
+│   └── forge-gateway/           # remote Stellar-context MCP server
 └── .claude/commands/  # Slash commands
 ```
 
@@ -297,6 +305,32 @@ Each agent's output is checked against structured pass/fail criteria. If it fail
 | github | `create_or_update_file`, `search_repos`, `create_pull_request` |
 | playwright | `browser_navigate`, `browser_click`, `browser_screenshot` |
 
+### Forge Gateway (remote Stellar-context MCP server)
+
+`packages/forge-gateway` — a Raven-style gateway that exposes the framework's curated Stellar knowledge (skills, evals, standards, ecosystem intel) to any MCP client over HTTP. Built with the Streamable HTTP transport.
+
+```bash
+npm run gateway            # start on :8787 (POST /mcp, /api/search, /api/execute, /playground)
+npm run gateway:test       # 10/10 unit tests
+npm run gateway:check-live # probe Soroban RPC, Horizon, npm, docs site, GitHub
+```
+
+| Tool | Purpose |
+|---|---|
+| `search` | Ranked catalog search across 61 curated Stellar resources |
+| `execute` | Sandboxed execution of catalog operations (no fs/network in sandbox) |
+| `catalog_summary` | Catalog overview by type |
+
+### Forge Vault (milestone escrow)
+
+`templates/contracts/vault` — a trustless milestone-escrow contract. The depositor commits funds against release keys; the recipient claims each milestone by presenting the matching sha256 preimage; the arbiter can override (release or refund); the depositor recovers unclaimed funds after the deadline.
+
+```bash
+cargo test --manifest-path templates/contracts/vault/Cargo.toml  # 9/9 tests
+```
+
+**Live on Stellar Testnet:** `CB2JGINPQP6DSWEY6N5XOWOSVOW6IPCNLSM2AQWVKP3LTVSQ3SQSHKFZ` (see `data/deployments/testnet.json`).
+
 ### Contract Deployment
 
 Test-gated deployment — `cargo test` must pass or the deploy aborts.
@@ -307,6 +341,18 @@ Test-gated deployment — `cargo test` must pass or the deploy aborts.
 ---
 
 ## Configuration
+
+### Releases & npm auto-publish
+
+Tagging `v<semver>` on `master` triggers:
+- **npm publish** — `.github/workflows/publish-npm.yml` verifies the tag matches `packages/create-stellar-agentic/package.json`'s version, gates on the gateway tests, then publishes to npm (needs the `NPM_TOKEN` secret)
+- **Site deploy** — `.github/workflows/deploy-site.yml` ships the docs site to Vercel
+
+Bump the version first, then tag:
+
+```bash
+npm version patch -w create-stellar-agentic && git push --tags
+```
 
 ### Environment Variables
 
@@ -337,6 +383,12 @@ Create an agent file in `agents/`, register it in `CLAUDE.md`'s org graph table,
 
 **My contracts don't compile — what SDK version?**  
 Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for a newer patch.
+
+**How does the vault escrow work?**  
+The depositor commits funds via `deposit`; the recipient calls `claim_milestone(index, proof)` where `sha256(proof)` must equal the stored release key. The arbiter can `release`/`refund` regardless, and the depositor `recover`s unclaimed funds after the deadline. See `templates/contracts/vault/src/lib.rs`.
+
+**How does the npm release flow work?**  
+Tag `v<version>` → CI verifies the tag matches `packages/create-stellar-agentic/package.json`, runs tests, publishes to npm, and redeploys the site. Push tags after bumping the version.
 
 ---
 

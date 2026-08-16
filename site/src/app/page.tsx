@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Box, Layout, Server, CreditCard, ShieldCheck, GitBranch, ArrowRight, Copy, Check, Cpu, Network, Workflow, Zap, BookOpen, FileCode } from "lucide-react";
+import { Box, Layout, Server, CreditCard, ShieldCheck, GitBranch, Cable, Vault, ArrowRight, Copy, Check, Cpu, Network, Workflow, Zap, BookOpen, FileCode } from "lucide-react";
 import StatsBar, { StarButton } from "../components/RepoStats";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -15,6 +15,8 @@ const features = [
   { icon: CreditCard, title: "x402 Payments", desc: "Monetize APIs with HTTP 402 and Stellar USDC — zero-XLM clients via OZ Channels." },
   { icon: ShieldCheck, title: "Zero-Knowledge Proofs", desc: "Integrate Groth16, Circom, and Noir verifiers into Stellar contracts via BLS12-381." },
   { icon: GitBranch, title: "Eval-Driven Pipeline", desc: "Every agent output verified against structured evals with max 3 retries. No blind trust." },
+  { icon: Cable, title: "Forge Gateway", desc: "A remote Stellar-context MCP server — catalog search + sandboxed execution for any MCP client." },
+  { icon: Vault, title: "Forge Vault", desc: "Trustless milestone escrow on Soroban — sha256 release keys, arbiter override, deadline recovery. Live on testnet." },
 ];
 
 const agents = [
@@ -393,7 +395,7 @@ export default function Home() {
         <div className="container">
           <span className="section-label">Features</span>
           <h2 className="section-title">Everything you need to ship on Stellar</h2>
-          <p className="section-sub">Six specialist agents, 10 domain skills, 5 eval files. From contract to deployment in minutes.</p>
+          <p className="section-sub">Six specialist agents, 10 domain skills, 5 eval files, an MCP gateway, and an escrow vault — live on testnet. From contract to deployment in minutes.</p>
           <div className="card-grid">
             {features.map((f, i) => {
               const Icon = f.icon;
