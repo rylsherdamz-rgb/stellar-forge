@@ -121,6 +121,9 @@ Solo builder, 4 months (~480 engineering hours at $62.50/hr blended). Budget cov
 - `docs/REPRODUCIBILITY.md` — clean-environment reproduction guide, version-pin table verified against npm registry ✓
 - `packages/forge-gateway/` — Forge Gateway: remote Stellar-context MCP server (Raven-style) with catalog search + sandboxed `execute`, playground, and daily live-service checks; 10/10 unit tests green; live checks currently passing for Soroban RPC, Horizon, npm, docs site, GitHub (tranche 3.x adjacent, shipped early)
 - CI now runs gateway + framework tests on every push (`.github/workflows/ci.yml`)
+- `templates/contracts/vault/` — Forge Vault: trustless milestone-escrow contract (deposit → claim via sha256 release-key proof, arbiter release, deadline recovery); **9/9 unit tests passing**; compiled WASM 21,562 bytes (tranche 1.x adjacent, shipped early)
+- **Testnet deployment live:** Forge Vault deployed to Stellar Testnet as `CB2JGINPQP6DSWEY6N5XOWOSVOW6IPCNLSM2AQWVKP3LTVSQ3SQSHKFZ` — recorded in `data/deployments/testnet.json` (network, ID, WASM hash, timestamp); verified executable via public RPC: `stellar contract invoke ... -- total_committed` → `"0"` (tranche 2.1 evidence ✓)
+- **Framework suite passing against live services:** x402 payment flow (402 → paid 200) + MPP charge flow (health + balance lookup) + contract-state RPC check — **3/3 suites green** against a live local backend + Soroban testnet RPC (tranche 2.1 evidence ✓)
 
 ### Tranche #3 — Mainnet Launch (40%, $12,000) — Month 4
 
