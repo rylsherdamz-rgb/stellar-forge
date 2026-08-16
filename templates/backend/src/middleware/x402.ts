@@ -3,6 +3,9 @@ import { Request, Response, NextFunction } from "express";
 const NETWORK = process.env.STELLAR_NETWORK || "stellar:testnet";
 const RECIPIENT = process.env.STELLAR_RECIPIENT;
 const OZ_API_KEY = process.env.OZ_API_KEY;
+// Dev/test bypass: any value of X402_BYPASS_TOKEN (default "simulated-payment")
+// in the x-payment header passes the middleware without OZ verification.
+const X402_BYPASS_TOKEN = process.env.X402_BYPASS_TOKEN || "simulated-payment";
 
 export function x402Middleware(req: Request, res: Response, next: NextFunction) {
   const paymentHeader = req.headers["x-payment"] as string | undefined;
@@ -17,6 +20,12 @@ export function x402Middleware(req: Request, res: Response, next: NextFunction) 
       payTo: RECIPIENT,
       description: "Pay USDC to access this resource",
     });
+    return;
+  }
+
+  // Dev/test bypass — skip OZ verification for simulated payments
+  if (paymentHeader === X402_BYPASS_TOKEN) {
+    next();
     return;
   }
 

@@ -18,7 +18,7 @@ app.get("/api/accounts/:address/balance", async (req, res) => {
     const native = account.balances.find((b: any) => b.asset_type === "native");
     res.json({ address: req.params.address, balance: native?.balance || "0" });
   } catch (err: any) {
-    if (err.response?.status === 404) {
+    if (err.response?.status === 404 || err.response?.status === 400) {
       res.json({ address: req.params.address, balance: "0" });
       return;
     }
