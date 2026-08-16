@@ -39,40 +39,72 @@ The org graph is stable. Each node owns a zone with persistent context. Edges de
 | @stellar-zk | Zero-knowledge (Groth16, Circom) | Verifier contracts, proof fixtures | → @stellar-contracts (verifier WASM) | evals/01-contract-eval.md |
 | @stellar-ops | CI/CD, deployment, Docker | Workflow YAML, secrets, deploy targets | ← all nodes (build artifacts) | evals/04-e2e-eval.md |
 
-## Work Graph — Dynamic Per-Task Wiring
-For every incoming task, generate a work graph:
+## Work Graph — Plan, Fan-Out, Merge
+For every incoming task: **plan before spawning, batch-spawn per wave, merge after each wave**.
 
-1. **Parse** — extract agents needed, domains touched, LIBRARY skill triggers
-2. **Wire** — determine edges based on data dependencies (not hardcoded order)
-3. **Execute** — run nodes respecting edge constraints:
-   - **Sequential edge** → A must finish before B starts (contract → frontend)
-   - **Parallel edge** → A and B can run concurrently (frontend + backend)
-   - **Conditional edge** → B runs only if A's verifier passes
-   - **Fan-out** → one node's output splits to multiple downstream nodes
-   - **Fan-in** → multiple nodes converge into one
-4. **Verify** — after each node, run its verifier. Pass → proceed. Fail → steer.
-5. **Synthesize** — collect all verified outputs into unified eval report
+### Phase 0 — Plan (mandatory, spawn nothing yet)
+1. **Decompose** — split the task into node-sized slices, one per agent zone
+2. **Draw DAG** — mark each edge: parallel (independent), sequential (needs upstream output), conditional (needs upstream pass)
+3. **Assign file ownership** — each slice owns disjoint paths; shared files (`.env`, `data/deployments/`) are kernel-owned — agents never write them
+4. **Define interface contracts** — what each slice must emit (contract IDs, endpoint shapes, middleware path) so downstream slices never block on upstream unless truly dependent
+5. **Order waves** — Wave 1 = all independent slices; Wave 2 = slices needing Wave 1 outputs; Wave N = rest
+6. **Write graph** — `data/graphs/<task>.json`: machine-readable DAG (nodes, edges, waves, status), plus `data/plans/<task>.md` for the human-readable rationale
+
+### Phase 1 — Parallel Fan-Out
+- **Batch spawns**: launch every node in a wave as sub-agent Task calls in ONE message — that is what makes them run concurrently. Never spawn Wave-1 nodes one at a time.
+- **Waves are serial, nodes within a wave are parallel**: Wave 1 fan-out → fan-in merge → Wave 2 fan-out.
+- **Mark graph state**: set spawned nodes `running` in `data/graphs/<task>.json` before dispatch.
+- Each spawn prompt carries: intent slice, eval criteria, owned paths, interface contract, memory scope.
+
+### Phase 2 — Fan-in Merge (kernel does this, never agents)
+- Collect each node's **state delta** (files written, IDs created, config values)
+- Apply deltas to shared state yourself: append `data/deployments/`, merge `.env` keys — two agents editing `.env` concurrently clobbers each other
+- Mark each node `verified` or `failed` in the graph. Pass → next wave. Fail → steer (retry → reroute → escalate, max 3), updating `status`/`retries`/`agent` as you go
+- Synthesize all verified outputs into the eval report, mark graph `complete`
+
+### Edge semantics
+- **Sequential** → downstream node goes in a later wave (contract → frontend)
+- **Parallel** → same wave, batch-spawned together (frontend ∥ backend)
+- **Conditional** → downstream spawns only if upstream verifier passes
+- **Fan-out** → one output feeds many downstream (contract ID → frontend + zk)
+- **Fan-in** → many outputs converge into one (backend ← frontend + payments)
+
+### Graph state — `data/graphs/<task>.json`
+Every node holds a status the kernel mutates as execution proceeds. Never spawn from prose — read the graph, execute pending nodes of the current wave, write the graph back after fan-in.
 
 ```
-User: "Build a token contract with a React frontend"
-→ Work Graph:
-  [contracts] ──(contract_id)──→ [frontend]
-       │                              │
-       │(verifier)                (verifier)
-       ↓                              ↓
-      pass                          pass → [kernel: synthesize]
+pending → running → verified → complete (all nodes)
+                 ↘ failed → retry (retries+1) → running | rerouted (agent changed) → running
+```
+
+```json
+{
+  "task": "x402-api", "status": "planned",
+  "waves": [{"wave": 1, "mode": "parallel", "nodes": ["contracts", "frontend", "payments"]},
+            {"wave": 2, "mode": "parallel", "nodes": ["backend"]}],
+  "nodes": {
+    "contracts": {"agent": "stellar-contracts", "status": "pending", "retries": 0,
+                  "paths": ["contracts/"], "verifier": "evals/01-contract-eval.md",
+                  "contract": "emit NEXT_PUBLIC_TOKEN_CONTRACT_ID", "delta": {}},
+    "frontend":  {"agent": "stellar-frontend",  "status": "pending", "retries": 0,
+                  "paths": ["frontend/"],  "verifier": "evals/02-frontend-eval.md",
+                  "contract": "emit endpoint shape list", "delta": {}},
+    "payments":  {"agent": "stellar-payments",  "status": "pending", "retries": 0,
+                  "paths": ["backend/src/middleware/"], "verifier": "evals/03-backend-eval.md",
+                  "contract": "emit middleware path + USDC addr", "delta": {}}
+  },
+  "edges": [
+    {"from": "contracts", "to": "frontend", "type": "sequential", "data": "contract IDs"},
+    {"from": "frontend",  "to": "backend",  "type": "parallel",   "data": "API requirements"},
+    {"from": "payments",  "to": "backend",  "type": "sequential", "data": "middleware path"}
+  ]
+}
 ```
 
 ```
-User: "Build a paid API with x402"
-→ Work Graph:
-  [contracts] ──(token_address)──→ [payments] ──(middleware)──→ [backend]
-                                           (parallel)
-  [frontend] ──────────────────────────────────────────────────→ [backend]
-       │                                                           │
-   (verifier)                                                  (verifier)
-       ↓                                                           ↓
-      pass                                                       pass → [kernel: synthesize]
+User: "Build a paid API with x402" → Wave 1 (parallel): [contracts] ∥ [frontend] ∥ [payments]
+→ fan-in merge → Wave 2 (parallel): [backend ← frontend + payments + contracts]
+→ verify each wave → synthesize eval report
 ```
 
 ## Dynamic Agent Orgs — Graph Writes Itself
@@ -86,21 +118,13 @@ User: "Build a paid API with x402"
 | New data source discovered | Add tool access to relevant node, rerun dependent branch |
 
 ## Node Execution Contract
-Each node runs its own loop: **act → verify → retry | pass**. The graph engine supplies:
-- **Intent** — the node's slice of the task with eval criteria
-- **Context** — shared state (contract IDs, deploy records, .env) passed along edges
-- **Tools** — restricted to the node's zone (contracts gets cargo/stellar-cli, frontend gets npm/next.js)
-
-The node returns:
-- **Output** — files written, contracts deployed, endpoints created
-- **State delta** — what changed (new IDs, updated configs, log entries)
-- **Verifier result** — pass/fail with specific failures
+Each node runs its own loop: **act → verify → retry | pass**. The graph engine supplies intent (slice + eval criteria), context (shared state passed along edges), and tools (restricted to the node's zone). The node returns: **output** (files written), **state delta** (IDs/configs changed), **verifier result** (pass/fail).
 
 ## Routing (Work Graph Generation)
 1. Parse request for trigger keywords — if LIBRARY keyword, load skill first
-2. Generate work graph — determine nodes, edges, execution mode
+2. Phase 0 plan — decompose, draw DAG, assign file ownership, define contracts, order waves, write `data/graphs/<task>.json` + `data/plans/<task>.md`
 3. Load each node's agent from `agents/<name>.md`
-4. Execute graph respecting edge constraints
+4. Execute graph: batch-spawn each wave in one message, merge after each wave, mutate graph status as nodes progress
 5. On node failure: retry same node → reroute to fallback node → escalate
 6. Synthesize all verified outputs into eval report
 
@@ -111,17 +135,7 @@ The node returns:
 - Cost ceiling: warn before exceeding project's configured spend threshold.
 
 ## Hooks — Auto-Compact
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {"matcher": "Edit", "hooks": [{"type": "command", "command": "node ~/.claude/scripts/hooks/suggest-compact.js"}]},
-      {"matcher": "Write", "hooks": [{"type": "command", "command": "node ~/.claude/scripts/hooks/suggest-compact.js"}]}
-    ]
-  }
-}
-```
-Suggests `/compact` every 50 tool calls, then every 25. Compact after: research → implementation, milestone completion, debug resolution, agent switch.
+`PreToolUse` (Edit/Write) → `node ~/.claude/scripts/hooks/suggest-compact.js` — suggests `/compact` every 50 tool calls, then every 25. Compact after: research → implementation, milestone completion, debug resolution, agent switch.
 
 ## Persistent State
 | Directory | Purpose | Git |
@@ -133,6 +147,8 @@ Suggests `/compact` every 50 tool calls, then every 25. Compact after: research 
 | `data/logs/costs/` | Token/cost spend per session | ignored |
 | `data/deployments/` | Deployed contract registry (network, ID, WASM hash, timestamp) | tracked |
 | `data/inbox/` | New tasks awaiting triage | ignored |
+| `data/plans/` | Human-readable work-graph manifests per task | tracked |
+| `data/graphs/` | Machine-readable DAG state (nodes, edges, waves, status) | tracked |
 | `graphify-out/` | Knowledge graph output | ignored |
 
 ## Session Reflection

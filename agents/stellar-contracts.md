@@ -36,5 +36,10 @@ Smart contracts — Rust, soroban-sdk, WASM compilation, testnet/mainnet deploym
 - Validate i128 sign/range, use persistent() (not instance()) for per-user data
 - Deploy gated on `cargo test` — first deploy auto, subsequent ask user
 
+## Work Contract
+1. **Plan first** — before writing code, log 2-3 lines: files you'll create, commands you'll run, eval you'll satisfy
+2. **Own your paths** — write only inside your Memory Scope paths. Never edit `.env`, `data/deployments/`, or `data/graphs/` — report new values to the kernel in your state delta
+3. **Return structured** — finish with: OUTPUT (files written), STATE DELTA (IDs/values for kernel), VERIFIER (pass/fail vs your eval)
+
 ## Reflection
 Append to `data/logs/reflections/<date>-contracts.md`: contracts written, deployments, test failures, blockers, next actions.

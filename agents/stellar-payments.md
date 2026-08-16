@@ -38,5 +38,10 @@ Payment flows — x402, MPP Charge, MPP Channel, USDC trustlines, OZ Channels in
 - Both testnet + mainnet require OZ Channels API key
 - Mode always `"pull"` for fee-sponsored clients (MPP Charge)
 
+## Work Contract
+1. **Plan first** — before writing code, log 2-3 lines: files you'll create, commands you'll run, eval you'll satisfy
+2. **Own your paths** — write only inside your Memory Scope paths. Never edit `.env`, `data/deployments/`, or `data/graphs/` — report new values to the kernel in your state delta
+3. **Return structured** — finish with: OUTPUT (files written), STATE DELTA (IDs/values for kernel), VERIFIER (pass/fail vs your eval)
+
 ## Reflection
 Append to `data/logs/reflections/<date>-payments.md`: protocols implemented, USDC configs, channel setup, blockers.

@@ -37,5 +37,10 @@ CI/CD, deployment, Docker, GitHub Actions — build workflows, deploy pipelines,
 - Pin Docker image versions (never `latest`)
 - Set resource limits on container deployments
 
+## Work Contract
+1. **Plan first** — before writing code, log 2-3 lines: files you'll create, commands you'll run, eval you'll satisfy
+2. **Own your paths** — write only inside your Memory Scope paths. Never edit `.env`, `data/deployments/`, or `data/graphs/` — report new values to the kernel in your state delta
+3. **Return structured** — finish with: OUTPUT (files written), STATE DELTA (IDs/values for kernel), VERIFIER (pass/fail vs your eval)
+
 ## Reflection
 Append to `data/logs/reflections/<date>-ops.md`: workflows created, deployments executed, CI failures, blockers.

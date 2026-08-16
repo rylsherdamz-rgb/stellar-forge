@@ -154,12 +154,16 @@ function copyFrameworkSkill(targetDir) {
   copyDir(join(PKG_ROOT, "agents"), join(targetDir, "agents"));
   copyDir(join(PKG_ROOT, ".claude"), join(targetDir, ".claude"));
   copyDir(join(PKG_ROOT, "evals"), join(targetDir, "evals"));
+  copyDir(join(PKG_ROOT, "references"), join(targetDir, "references"));
   mkdirSync(join(targetDir, "data/projects"), { recursive: true });
   mkdirSync(join(targetDir, "data/decisions"), { recursive: true });
   mkdirSync(join(targetDir, "data/logs"), { recursive: true });
   mkdirSync(join(targetDir, "data/deployments"), { recursive: true });
-  writeFileSync(join(targetDir, "data/README.md"),
-    "# Data Directory\n\nPersistent file-based memory for the Stellar Agentic Framework.\n");
+  mkdirSync(join(targetDir, "data/graphs"), { recursive: true });
+  mkdirSync(join(targetDir, "data/plans"), { recursive: true });
+  copyFile(join(PKG_ROOT, "data/README.md"), join(targetDir, "data/README.md"));
+  copyDir(join(PKG_ROOT, "data/graphs"), join(targetDir, "data/graphs"));
+  copyDir(join(PKG_ROOT, "data/plans"), join(targetDir, "data/plans"));
   copyDir(join(PKG_ROOT, "scripts"), join(targetDir, "scripts"));
 }
 

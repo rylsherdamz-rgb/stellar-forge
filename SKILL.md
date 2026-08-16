@@ -90,10 +90,10 @@ Describe what you're building. The harness maps keywords to eval templates and w
 | "NFT marketplace" | contract + frontend |
 | "Full dApp" | all evals |
 
-### Phase 2 — Spawn Agents
-The harness routes sub-tasks to specialist agents in parallel. Each agent receives your intent, eval criteria, and template code.
+### Phase 2 — Plan & Spawn Agents
+The kernel first plans the work graph (nodes, edges, waves, file ownership — written to `data/graphs/<task>.json`), then routes sub-tasks to specialist agents **in parallel waves** — every independent agent of a wave is spawned in one batch. Each agent receives your intent, eval criteria, owned paths, and interface contract.
 
-See `references/agents.md` for the full agent registry.
+See `references/agents.md` for the full agent registry and `references/work-graph.md` for the parallel execution protocol.
 
 ### Phase 3 — Verify & Steer
 After agents complete, evals check every output. Failed evals trigger corrective retries (max 3).

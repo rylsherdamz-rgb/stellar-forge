@@ -1,0 +1,17 @@
+{
+  "name": "stellar-forge-tests",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Framework test suites (x402 flow, MPP Charge flow, contract state, e2e specs)",
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

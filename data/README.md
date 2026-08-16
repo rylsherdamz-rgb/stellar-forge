@@ -6,8 +6,17 @@ Persistent file-based memory for the Stellar Agentic Framework.
 data/
 ├── projects/           # Per-project context files
 ├── decisions/          # Architecture decisions (ADR format)
+├── plans/              # Human-readable work-graph manifests per task
+├── graphs/             # Machine-readable DAG state (nodes, edges, waves, status)
 └── logs/               # Session activity logs
 ```
+
+## Plans & Graphs
+For every task the kernel writes two files in Phase 0 planning:
+- `data/plans/<task-slug>.md` — human-readable manifest: nodes, owned paths, interface contracts, wave order
+- `data/graphs/<task-slug>.json` — executable DAG: node statuses the kernel mutates as waves run
+
+See `references/work-graph.md` for the full protocol. Agents never write these files.
 
 ## Projects
 Each file in `data/projects/` tracks the state of a scaffolding or deployment:
