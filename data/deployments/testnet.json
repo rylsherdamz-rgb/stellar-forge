@@ -1,0 +1,14 @@
+{
+  "network": "testnet",
+  "deployer": "deployer",
+  "contracts": [
+    {
+      "name": "vault",
+      "contract_id": "CB2JGINPQP6DSWEY6N5XOWOSVOW6IPCNLSM2AQWVKP3LTVSQ3SQSHKFZ",
+      "wasm_hash": "21d1b9740f86766fd58bcba4d4e102d2dfbe0f63904f4861f5b6f5d7e2c1534e",
+      "deployed_at": "2026-08-16T18:45:00Z",
+      "source": "templates/contracts/vault",
+      "wasm_size_bytes": 21562
+    }
+  ]
+}
