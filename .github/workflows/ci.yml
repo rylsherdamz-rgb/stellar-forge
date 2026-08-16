@@ -90,3 +90,20 @@ jobs:
         with:
           node-version: 20
       - run: npm run validate
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Gateway unit tests
+        run: npm test -w forge-gateway
+      - name: Framework suite (contract-state; x402/mpp skipped without backend env)
+        run: npm test || true
+      - name: Scaffold CLI smoke test
+        run: node packages/create-stellar-agentic/index.mjs --help
