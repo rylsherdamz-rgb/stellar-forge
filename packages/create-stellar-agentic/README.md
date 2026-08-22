@@ -357,7 +357,7 @@ stellar-forge/
 │   ├── decisions/                  #   ADR-format decisions
 │   ├── deployments/                #   Contract deploy tracker
 │   └── logs/                       #   Session logs
-├── .claude/commands/               # 4 slash commands
+├── .claude/commands/               # 5 slash commands
 ├── .mcp.json                       # MCP server config
 ├── packages/create-stellar-agentic # npm CLI package
 └── .env.example                    # All env vars documented
@@ -374,7 +374,7 @@ stellar-forge/
 | `--yes` / `-y` | Skip all prompts (defaults) |
 | `--skill-only` | Install skill only, skip project scaffold |
 | `--no-install` | Skip npm install after scaffold |
-| `--template <type>` | Scaffold type: `full`, `contract`, `frontend`, `backend`, `minimal` |
+| `--template <type>` | Scaffold type: `full`, `contract-only`, `frontend-only`, `backend-only`, `payment-only` |
 
 ### `npx skills add rylsherdamz-rgb/stellar-forge`
 
@@ -397,7 +397,7 @@ Every task starts with defined success criteria. Evals catch failures early and 
 | `01-contract-eval` | Compiles to WASM, unit tests pass, auth on privileged fns, TTL on writes, deploy gated on all tests passing, contract ID recorded in tracker + `.env` |
 | `02-frontend-eval` | TypeScript compiles, wallet connect/disconnect, contract read/write, no raw RPC |
 | `03-backend-eval` | Server starts, balance & contract endpoints return valid data, CORS present |
-| `04-payment-eval` | x402 rejects unpaid with 402, accepts valid payment, MPP charge flow succeeds |
+| `04-e2e-eval` | End-to-end: contract deploys, wallet connects, transactions submit, payment flows succeed |
 | `05-framework-eval` | All agents produced output, all evals ran, graphify completed, ADR written |
 
 ---

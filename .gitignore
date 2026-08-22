@@ -67,6 +67,5 @@ packages/create-stellar-agentic/.claude/
 packages/create-stellar-agentic/SKILL.md
 packages/create-stellar-agentic/CLAUDE.md
 packages/create-stellar-agentic/.env.example
-packages/create-stellar-agentic/.mcp.json
 .vercel
 .env*

@@ -50,6 +50,8 @@
     "CLAUDE.md",
     "README.md",
     ".env.example",
-    ".mcp.json"
+    ".mcp.json",
+    "skill-manager.mjs",
+    "references/"
   ]
 }

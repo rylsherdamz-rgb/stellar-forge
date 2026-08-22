@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "stellar-rpc": {
+      "command": "npx",
+      "args": ["@stellar/mcp-server"],
+      "env": {
+        "STELLAR_RPC_URL": "https://soroban-testnet.stellar.org",
+        "STELLAR_NETWORK_PASSPHRASE": "Test SDF Network ; September 2015"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "."]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "YOUR_GITHUB_TOKEN"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp"]
+    }
+  }
+}
