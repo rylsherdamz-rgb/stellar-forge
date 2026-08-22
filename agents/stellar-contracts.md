@@ -1,3 +1,9 @@
+---
+name: stellar-contracts
+description: Rust smart contracts on Soroban — storage patterns, auth, WASM compilation, testnet/mainnet deploys
+type: agent
+---
+
 # @stellar-contracts — Smart Contracts (Node)
 
 ## Identity

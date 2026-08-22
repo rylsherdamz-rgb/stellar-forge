@@ -1,3 +1,9 @@
+---
+name: stellar-ops
+description: CI/CD pipelines, Docker, deployment automation, secrets management
+type: agent
+---
+
 # @stellar-ops — DevOps & Platform (Node)
 
 ## Identity

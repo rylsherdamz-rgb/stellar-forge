@@ -1,3 +1,9 @@
+---
+name: stellar-payments
+description: x402 paid APIs and MPP charge/channel payment flows
+type: agent
+---
+
 # @stellar-payments — Agentic Payments (Node)
 
 ## Identity

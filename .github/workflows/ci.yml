@@ -2,11 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, staging, dev]
   pull_request:
-    branches: [master]
+    branches: [master, staging, dev]
   release:
     types: [published]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -14,85 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate SKILL.md frontmatter
-        run: |
-          echo "::group::SKILL.md frontmatter"
-          errors=0
-          for field in name version description tags; do
-            if head -20 SKILL.md | grep -q "^$field:"; then
-              echo "  ✓ $field"
-            else
-              echo "  ✗ $field (missing)"
-              errors=$((errors+1))
-            fi
-          done
-          head -20 SKILL.md | grep -q "^author:" && echo "  ✓ author" || echo "  ⚠ author (optional)"
-          head -20 SKILL.md | grep -q "^homepage:" && echo "  ✓ homepage" || echo "  ⚠ homepage (optional)"
-          echo "::endgroup::"
-          exit $errors
-
-      - name: Validate skill.json
-        run: |
-          echo "::group::skill.json"
-          test -f skill.json && echo "  ✓ exists" || echo "  ✗ missing"
-          if [ -f skill.json ]; then
-            node -e "const s = require('./skill.json'); console.log('  name:', s.name); console.log('  displayName:', s.displayName)"
-          fi
-          echo "::endgroup::"
-
-      - name: Validate marketplace.json
-        run: |
-          echo "::group::marketplace.json"
-          test -f .claude-plugin/marketplace.json && echo "  ✓ exists" || echo "  ✗ missing"
-          echo "::endgroup::"
-
-      - name: Validate agent files
-        run: |
-          echo "::group::Agent files"
-          for f in agents/*.md; do
-            name=$(basename "$f" .md)
-            head -10 "$f" | grep -q "^name:" && echo "  ✓ $name" || echo "  ✗ $name (missing frontmatter)"
-          done
-          echo "::endgroup::"
-
-      - name: Validate CLI entry point
-        run: |
-          echo "::group::CLI"
-          test -f packages/create-stellar-agentic/index.mjs && echo "  ✓ entry" || echo "  ✗ missing"
-          echo "::endgroup::"
-
-      - name: Validate bundled skills
-        run: |
-          echo "::group::Bundled skills"
-          for dir in skills/*/; do
-            name=$(basename "$dir")
-            if [ -f "$dir/SKILL.md" ]; then
-              echo "  ✓ $name"
-            else
-              echo "  ✗ $name (missing SKILL.md)"
-            fi
-          done
-          echo "::endgroup::"
-
-      - name: Validate README badges
-        run: |
-          echo "::group::README badges"
-          grep -c "img.shields.io" README.md && echo "  ✓ badges present: $(grep -c 'img.shields.io' README.md)" || echo "  ⚠ no badges found"
-          echo "::endgroup::"
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm run validate
+      - name: Framework validation (skills, agents, evals, CLI packaging)
+        run: node scripts/validate.mjs
 
   test:
-    name: Test
+    name: Node Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +36,49 @@ jobs:
       - run: npm ci
       - name: Gateway unit tests
         run: npm test -w forge-gateway
-      - name: Framework suite (contract-state; x402/mpp skipped without backend env)
-        run: npm test || true
-      - name: Scaffold CLI smoke test
-        run: node packages/create-stellar-agentic/index.mjs --help
+      - name: Framework suite (x402/mpp skip gracefully without backend env)
+        run: npm test
+
+  cli-smoke:
+    name: CLI Package Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pack the CLI tarball
+        run: npm pack packages/create-stellar-agentic --pack-destination /tmp
+      - name: Install from tarball (catches missing files[] entries)
+        run: npm install -g /tmp/create-stellar-agentic-*.tgz
+      - name: Scaffold a project from the installed CLI
+        run: |
+          cd "$(mktemp -d)"
+          create-stellar-agentic my-dapp --yes --no-install
+      - name: Assert scaffolded output matches README claims
+        run: |
+          cd "$(mktemp -d)"
+          create-stellar-agentic my-dapp --yes --no-install > /dev/null
+          test -f my-dapp/contracts/token/src/lib.rs || { echo "FAIL: SEP-41 token contract missing"; exit 1; }
+          test -f my-dapp/backend/src/middleware/x402.ts || { echo "FAIL: x402 middleware missing"; exit 1; }
+          test -f my-dapp/frontend/src/hooks/use-stellar-data.ts || { echo "FAIL: useStellarData hook missing"; exit 1; }
+          test -f my-dapp/frontend/src/providers/wallet-provider.tsx || { echo "FAIL: wallet provider missing"; exit 1; }
+          test -f my-dapp/.github/workflows/contracts.yml || { echo "FAIL: CI workflow templates missing"; exit 1; }
+          test -f my-dapp/data/deployments/testnet.json || { echo "FAIL: deploy tracker missing"; exit 1; }
+          echo "Scaffold output verified: contracts, x402 middleware, hooks, workflows, tracker"
+
+  contracts:
+    name: Contract Template Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate: [hello-world, token, vault]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: templates/contracts/${{ matrix.crate }}
+      - name: cargo test (${{ matrix.crate }})
+        working-directory: templates/contracts/${{ matrix.crate }}
+        run: cargo test
