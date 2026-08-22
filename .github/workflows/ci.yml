@@ -48,7 +48,8 @@ jobs:
         with:
           node-version: 20
       - name: Pack the CLI tarball
-        run: npm pack packages/create-stellar-agentic --pack-destination /tmp
+        working-directory: packages/create-stellar-agentic
+        run: npm pack --pack-destination /tmp
       - name: Install from tarball (catches missing files[] entries)
         run: npm install -g /tmp/create-stellar-agentic-*.tgz
       - name: Scaffold a project from the installed CLI
