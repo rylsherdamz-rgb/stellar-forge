@@ -1,0 +1,23 @@
+[package]
+name = "token"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+soroban-sdk = "27.0.0-rc.1"
+
+[dev-dependencies]
+soroban-sdk = { version = "27.0.0-rc.1", features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true

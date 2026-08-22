@@ -1,0 +1,9 @@
+# Session data — not checked in
+/logs/
+/inbox/
+/graphify-out/
+
+# Tracked by design — check in decisions and deploy registry
+# decisions/
+# deployments/
+# projects/

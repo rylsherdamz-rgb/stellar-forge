@@ -1,0 +1,38 @@
+name: Contracts
+
+on:
+  push:
+    paths: ["contracts/**"]
+  pull_request:
+    paths: ["contracts/**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup target add wasm32v1-none
+      - run: cargo test --manifest-path contracts/Cargo.toml
+      - run: cargo build --release --target wasm32v1-none --manifest-path contracts/Cargo.toml
+
+  deploy-testnet:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup target add wasm32v1-none
+      - run: cargo build --release --target wasm32v1-none --manifest-path contracts/Cargo.toml
+      - uses: stellar/actions/install-cli@main
+      - run: |
+          stellar keys generate ci-deployer --network testnet --fund 2>/dev/null || true
+          for wasm in contracts/*/target/wasm32v1-none/release/*.wasm; do
+            stellar contract deploy \
+              --wasm "$wasm" \
+              --source-account ci-deployer \
+              --network testnet
+          done
+        env:
+          STELLAR_RPC_URL: "https://soroban-testnet.stellar.org"
