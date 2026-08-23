@@ -243,6 +243,10 @@ The graph engine routes to the relevant agents, each with domain skills and eval
 
 ```bash
 npx create-stellar-agentic my-dapp
+
+# or install globally
+npm install -g create-stellar-agentic
+create-stellar-agentic my-dapp --yes
 ```
 
 This generates a production-ready monorepo:

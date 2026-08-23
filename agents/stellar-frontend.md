@@ -1,3 +1,9 @@
+---
+name: stellar-frontend
+description: Next.js dApp UI with Stellar Wallets Kit and Stellar Agentic Kit hooks
+type: agent
+---
+
 # @stellar-frontend — dApp Frontend (Node)
 
 ## Identity

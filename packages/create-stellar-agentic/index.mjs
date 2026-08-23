@@ -1,12 +1,21 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, cpSync, readdirSync, statSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, cpSync, readdirSync, statSync, writeFileSync, realpathSync } from "fs";
 import { join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
 import { createInterface } from "readline";
 import { cmdList, cmdAdd, cmdInstallAll, listMissing, installSkill, skillExists, isInstalled, listAvailable } from "./skill-manager.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const here = dirname(fileURLToPath(import.meta.url));
+// Global installs expose this file through a bin symlink; resolve to the real
+// package dir so bundled assets are found regardless of how we were invoked.
+const __dirname = (() => {
+  try {
+    return realpathSync(here);
+  } catch {
+    return here;
+  }
+})();
 const PKG_ROOT = existsSync(join(__dirname, "templates"))
   ? __dirname
   : join(__dirname, "../..");

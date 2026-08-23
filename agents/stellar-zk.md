@@ -1,3 +1,9 @@
+---
+name: stellar-zk
+description: Zero-knowledge proofs on Stellar — Groth16, Circom, Noir verifier contracts
+type: agent
+---
+
 # @stellar-zk — Zero-Knowledge (Node)
 
 ## Identity
