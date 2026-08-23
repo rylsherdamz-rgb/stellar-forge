@@ -350,7 +350,7 @@ Test-gated deployment — `cargo test` must pass or the deploy aborts.
 
 Tagging `v<semver>` on `master` triggers:
 - **npm publish** — `.github/workflows/publish-npm.yml` verifies the tag matches `packages/create-stellar-agentic/package.json`'s version, gates on the gateway tests, then publishes to npm (needs the `NPM_TOKEN` secret)
-- **Site deploy** — `.github/workflows/deploy-site.yml` ships the docs site to Vercel
+- **Site deploy** — handled by Vercel's own Git integration on every push (no GitHub workflow needed)
 
 Bump the version first, then tag:
 

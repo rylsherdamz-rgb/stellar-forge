@@ -200,7 +200,7 @@ refactor: restructure A module
 1. PR `staging` → `master` (CI gates apply)
 2. Update version in `SKILL.md` frontmatter, `package.json`, and `packages/create-stellar-agentic/package.json` (all three must match the tag)
 3. Tag on `master`: `git tag v<semver> && git push origin v<semver>`
-4. `publish-npm.yml` verifies tag == package version, runs gateway tests, publishes to npm; `deploy-site.yml` deploys the site
+4. `publish-npm.yml` verifies tag == package version, runs gateway tests, publishes to npm; the site deploys via Vercel's Git integration
 
 ## Questions
 
