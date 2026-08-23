@@ -1,3 +1,9 @@
+---
+name: stellar-backend
+description: Express API servers, indexers, and RPC services for Stellar
+type: agent
+---
+
 # @stellar-backend — Backend & API (Node)
 
 ## Identity

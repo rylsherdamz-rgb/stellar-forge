@@ -5,6 +5,7 @@ Thanks for your interest in the Stellar Agentic Framework. This document covers 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [Branch Model](#branch-model)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
 - [Adding an Agent](#adding-an-agent)
@@ -18,6 +19,30 @@ Thanks for your interest in the Stellar Agentic Framework. This document covers 
 ## Code of Conduct
 
 This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Be respectful, constructive, and inclusive.
+
+## Branch Model
+
+```
+dev  ──PR──▶  staging  ──PR──▶  master
+```
+
+| Branch | Direct pushes | Purpose |
+|--------|--------------|---------|
+| `dev` | ✅ allowed | Active development. Commit often, push freely. |
+| `staging` | ❌ PRs only | Integration testing. CI must pass before merge. |
+| `master` | ❌ PRs only, admin-enforced | Production. Never push directly. |
+
+**Never push directly to `master`.** Branch protection enforces this even for
+admins; all changes arrive via pull request.
+
+### Required Checks (staging + master)
+
+PRs cannot merge until these CI jobs pass:
+
+- **Validate Framework** — skills/agents/evals/CLI packaging integrity (`scripts/validate.mjs`)
+- **Node Tests** — gateway unit tests + framework suite
+- **CLI Package Smoke Test** — packs the CLI tarball, installs it globally, scaffolds a project, asserts every README claim exists on disk
+- **Contract Template Tests** — `cargo test` matrix over hello-world/token/vault (master only)
 
 ## Getting Started
 
@@ -47,15 +72,16 @@ npx skills add ./ -g --agent claude-code
 ### Validation
 
 ```bash
-npm run validate
+node scripts/validate.mjs
 ```
 
 Checks:
 - SKILL.md frontmatter (name, version, description, tags)
-- skill.json validity
-- marketplace.json existence
-- All agent files parse correctly
-- No duplicate agent names
+- skill.json + marketplace.json validity (parsed JSON)
+- Agent files: frontmatter present, referenced in CLAUDE.md
+- All 10 bundled skills have SKILL.md
+- 5+ eval definitions exist
+- CLI: every local import in the entrypoint exists on disk AND is covered by `package.json` `files[]` — catches "works locally, broken on npm" packaging regressions
 
 ### Test a Scaffold
 
@@ -171,9 +197,10 @@ refactor: restructure A module
 
 ## Release Process
 
-1. Update version in `SKILL.md` frontmatter, `package.json`, and `packages/create-stellar-agentic/package.json`
-2. Create a GitHub release with release notes
-3. The `publish.yml` workflow validates and optionally publishes the CLI
+1. PR `staging` → `master` (CI gates apply)
+2. Update version in `SKILL.md` frontmatter, `package.json`, and `packages/create-stellar-agentic/package.json` (all three must match the tag)
+3. Tag on `master`: `git tag v<semver> && git push origin v<semver>`
+4. `publish-npm.yml` verifies tag == package version, runs gateway tests, publishes to npm; `deploy-site.yml` deploys the site
 
 ## Questions
 

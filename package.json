@@ -17,8 +17,8 @@
     "gateway": "npm run start -w forge-gateway",
     "gateway:test": "npm test -w forge-gateway",
     "gateway:check-live": "npm run check-live -w forge-gateway",
-    "lint": "echo 'Framework lint: ok'",
-    "validate": "node -e \"console.log('SKILL.md, skill.json, marketplace.json: valid')\""
+    "lint": "node scripts/validate.mjs",
+    "validate": "node scripts/validate.mjs"
   },
   "keywords": [
     "stellar",
