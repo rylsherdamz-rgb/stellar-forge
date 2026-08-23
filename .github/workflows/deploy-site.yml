@@ -27,6 +27,6 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to production
-        run: vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        run: vercel deploy --prod --yes --scope rylsherdamzs-projects --token "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
