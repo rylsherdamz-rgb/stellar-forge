@@ -23,9 +23,7 @@
   <a href="https://github.com/rylsherdamz-rgb/stellar-forge/releases">
     <img src="https://img.shields.io/github/v/tag/rylsherdamz-rgb/stellar-forge?label=release&color=7B3FE4">
   </a>
-  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/rylsherdamz-rgb/stellar-forge/publish-npm.yml?branch=master&label=cd&logo=npm&color=blue">
-  </a>
+
   <a href="https://www.npmjs.com/package/create-stellar-agentic">
     <img src="https://img.shields.io/npm/dw/create-stellar-agentic?color=blue&logo=npm&label=downloads%2Fweek">
   </a>
