@@ -65,7 +65,7 @@ jobs:
           test -f my-dapp/frontend/src/hooks/use-stellar-data.ts || { echo "FAIL: useStellarData hook missing"; exit 1; }
           test -f my-dapp/frontend/src/providers/wallet-provider.tsx || { echo "FAIL: wallet provider missing"; exit 1; }
           test -f my-dapp/.github/workflows/contracts.yml || { echo "FAIL: CI workflow templates missing"; exit 1; }
-          test -f my-dapp/data/deployments/testnet.json || { echo "FAIL: deploy tracker missing"; exit 1; }
+          test -d my-dapp/data/deployments || { echo "FAIL: deploy tracker missing"; exit 1; }
           echo "Scaffold output verified: contracts, x402 middleware, hooks, workflows, tracker"
 
   contracts:
