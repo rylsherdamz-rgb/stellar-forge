@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Stellar Agentic Framework — Build Stellar dApps with AI Agents",
+  title: "Stellar Forge — Developer Bounty & Escrow Marketplace",
   description:
-    "An open-source reference implementation for AI-assisted Stellar development. Install the Skill, scaffold a project with the create-stellar-agentic CLI, and build Soroban contracts + Stellar SDK apps verified by structured evals.",
+    "Fund software work in XLM held in a Soroban escrow contract, released only when a GitHub-verified submission is approved. The blockchain controls the money, not the frontend.",
   keywords: [
-    "stellar", "soroban", "smart contracts", "dapp", "ai agents",
-    "claude code", "open code", "x402", "stellar wallets kit", "blockchain",
-    "create-stellar-agentic", "stellar forge",
+    "stellar", "soroban", "bounty", "escrow", "marketplace", "xlm",
+    "smart contracts", "stellar wallets kit", "github", "web3",
   ],
   openGraph: {
-    title: "Stellar Agentic Framework",
-    description: "Installable Skill + scaffolding CLI for AI-assisted Stellar development, validated on Stellar Testnet.",
+    title: "Stellar Forge",
+    description:
+      "A Stellar-native developer bounty & escrow marketplace. Fund software work, held in a Soroban contract, settled on Stellar.",
   },
   robots: { index: true, follow: true },
   icons: { icon: "/favicon.svg" },
@@ -21,14 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
         {children}
         <Analytics />
