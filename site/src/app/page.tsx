@@ -9,14 +9,14 @@ import StatsBar, { StarButton } from "../components/RepoStats";
 gsap.registerPlugin(ScrollTrigger);
 
 const features = [
-  { icon: Box, title: "Smart Contracts", desc: "Scaffold Rust/Soroban contracts with build, test, and deploy workflows — testnet gated." },
-  { icon: Layout, title: "dApp Frontends", desc: "Generate Next.js apps pre-integrated with Stellar Wallets Kit, hooks, and tx flows." },
-  { icon: Server, title: "Backend APIs", desc: "Build API servers and indexers that query Stellar RPC and Horizon with x402 middleware." },
-  { icon: CreditCard, title: "x402 Payments", desc: "Monetize APIs with HTTP 402 and Stellar USDC — zero-XLM clients via OZ Channels." },
-  { icon: ShieldCheck, title: "Zero-Knowledge Proofs", desc: "Integrate Groth16, Circom, and Noir verifiers into Stellar contracts via BLS12-381." },
-  { icon: GitBranch, title: "Eval-Driven Pipeline", desc: "Every agent output verified against structured evals with max 3 retries. No blind trust." },
-  { icon: Cable, title: "Forge Gateway", desc: "A remote Stellar-context MCP server — catalog search + sandboxed execution for any MCP client." },
-  { icon: Vault, title: "Forge Vault", desc: "Trustless milestone escrow on Soroban — sha256 release keys, arbiter override, deadline recovery. Live on testnet." },
+  { icon: Vault, title: "On-Chain Escrow", desc: "Rewards are deposited into a Soroban contract at creation — every open bounty is provably funded." },
+  { icon: CreditCard, title: "XLM & USDC Rewards", desc: "Pay and get paid in native XLM or Stellar USDC, settled directly to the developer's wallet." },
+  { icon: GitBranch, title: "GitHub Proof of Work", desc: "Developers submit a Pull Request as proof; the PR, repo, and author are verified before approval." },
+  { icon: ShieldCheck, title: "Contract Is the Truth", desc: "The frontend never moves money. Only an authorized, on-chain state transition releases funds." },
+  { icon: Workflow, title: "Full Bounty Lifecycle", desc: "Open → Claimed → Submitted → Completed, with cancel, expire, and refund paths enforced on-chain." },
+  { icon: Box, title: "Human Approval", desc: "The creator reviews and approves with a wallet signature — no automatic or AI-driven payouts." },
+  { icon: Cpu, title: "AI Assistant (Advisory)", desc: "AI drafts bounty requirements and summarizes submissions. It never touches escrow funds." },
+  { icon: Server, title: "Verifiable Settlement", desc: "Every reward is a real Stellar transaction — the whole history is independently verifiable." },
 ];
 
 const agents = [
@@ -210,12 +210,12 @@ export default function Home() {
       <section className="hero" ref={heroRef}>
         <div className="hero-glow" ref={glowRef} />
         <div className="container hero-inner">
-          <h1><span>Build Stellar dApps</span><br />with AI Agents</h1>
+          <h1><span>Fund software work.</span><br />Get paid on Stellar.</h1>
           <p>
-            <strong>AI orchestration</strong> + <strong>project scaffolding</strong> for Stellar — an open-source
-            reference implementation for AI-assisted Stellar development. Six agents write, verify, and deploy
-            contracts, frontends, and payment APIs — no context-switching. The CLI bootstraps the project.
-            The Skill builds it. Use either, or both.
+            A <strong>Stellar-native developer bounty &amp; escrow marketplace</strong>. Post a funded bounty,
+            and the reward is held in a <strong>Soroban smart contract</strong>. Developers claim the work,
+            submit a GitHub Pull Request as proof, and — once you approve — the contract releases XLM or
+            USDC straight to their wallet. The blockchain controls the money, not the frontend.
           </p>
           <HeroInstallBlock />
           <StatsBar />
@@ -226,7 +226,7 @@ export default function Home() {
         <div className="container">
           <span className="section-label">Promo</span>
           <h2 className="section-title">Watch it in action</h2>
-          <p className="section-sub">60 seconds of contracts, terminals, and a graph engine wiring six agents.</p>
+          <p className="section-sub">60 seconds of funded bounties, on-chain escrow, and Stellar settlement.</p>
           <div className="promo-frame">
             <video controls muted playsInline preload="none" poster="/promo-poster.png">
               <source src="/promo.mp4" type="video/mp4" />
@@ -238,8 +238,8 @@ export default function Home() {
       <section id="why" className="section-alt" ref={whyRef}>
         <div className="container">
           <span className="section-label">Why This Exists</span>
-          <h2 className="section-title">Generic AI tools don't know Stellar</h2>
-          <p className="section-sub">Copilot and ChatGPT don't know contracts must be #![no_std], or that x402 needs OZ Channels and CAIP-2 network IDs. This framework embeds that domain knowledge into 10 skills, 6 agents, and 5 eval files.</p>
+          <h2 className="section-title">Bounties shouldn't run on trust</h2>
+          <p className="section-sub">Traditional bounty boards separate payment from proof: developers don't know a reward is funded, and creators hesitate to pay before seeing results. Stellar Forge escrows the reward on-chain the moment a bounty is created, and releases it only on an authorized, verifiable state transition.</p>
           <div className="why-grid">
             <div className="why-card">
               <div className="why-icon"><FileCode size={18} /></div>

@@ -14,397 +14,182 @@
   <a href="https://github.com/rylsherdamz-rgb/stellar-forge">
     <img src="https://img.shields.io/github/last-commit/rylsherdamz-rgb/stellar-forge?color=7B3FE4&logo=github&label=updated">
   </a>
-  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/rylsherdamz-rgb/stellar-forge/ci.yml?branch=master&label=ci&logo=github">
-  </a>
-  <a href="https://www.npmjs.com/package/create-stellar-agentic">
-    <img src="https://img.shields.io/npm/v/create-stellar-agentic?color=blue&logo=npm&label=cli">
-  </a>
-  <a href="https://github.com/rylsherdamz-rgb/stellar-forge/releases">
-    <img src="https://img.shields.io/github/v/tag/rylsherdamz-rgb/stellar-forge?label=release&color=7B3FE4">
-  </a>
-
-  <a href="https://www.npmjs.com/package/create-stellar-agentic">
-    <img src="https://img.shields.io/npm/dw/create-stellar-agentic?color=blue&logo=npm&label=downloads%2Fweek">
-  </a>
-  <a href="https://www.npmjs.com/package/create-stellar-agentic">
-    <img src="https://img.shields.io/npm/dt/create-stellar-agentic?color=blue&logo=npm&label=total%20downloads">
-  </a>
-  <a href="https://stellar-agentic-framework.vercel.app">
-    <img src="https://img.shields.io/badge/website-7B3FE4?logo=vercel&logoColor=white&label=docs">
-  </a>
-  <a href="https://x.com/ChichiCode0/status/2084510317862895653">
-    <img src="https://img.shields.io/badge/watch--promo-7B3FE4?logo=x&logoColor=white&label=60s">
-  </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green">
   </a>
+  <a href="SPEC.md">
+    <img src="https://img.shields.io/badge/spec-MVP%201.0-7B3FE4">
+  </a>
+  <img src="https://img.shields.io/badge/network-Stellar%20Testnet-7B3FE4?logo=stellar&logoColor=white">
 
   <br><br>
 
-  <p><b>AI orchestration + project scaffolding for Stellar dApps.</b><br>
-  An open-source reference implementation for AI-assisted Stellar development — six specialist agents write, verify, and deploy contracts, frontends, and payment APIs, no context-switching.<br>
-  <a href="https://stellar-agentic-framework.vercel.app" style="color:#7c3aed;text-decoration:none;">stellar-agentic-framework.vercel.app</a> · <a href="https://x.com/ChichiCode0/status/2084510317862895653" style="color:#7c3aed;text-decoration:none;">▶ Watch the 60s promo</a></p>
+  <p><b>A Stellar-native developer bounty &amp; escrow marketplace.</b><br>
+  Fund software work. Build software. Get paid on Stellar. Rewards are held in a
+  Soroban smart contract and released only when work is approved — the blockchain
+  controls the money, not the frontend.</p>
 
-  <table>
-    <tr>
-      <td align="center"><b>🧠 Agent Skill</b><br><sub>For Claude Code / OpenCode — 6 agents<br>that build your dApp from one prompt</sub></td>
-      <td width="30"></td>
-      <td align="center"><b>📦 Scaffold CLI</b><br><sub><code>npx create-stellar-agentic</code><br>Production monorepo in one command</sub></td>
-    </tr>
-  </table>
-
-  <br>
-
-  <video width="840" controls muted playsinline preload="metadata" poster="https://stellar-agentic-framework.vercel.app/promo-poster.png" style="max-width:100%;border-radius:14px;border:1px solid #1c1c2e;box-shadow:0 24px 80px rgba(0,0,0,.5)">
-    <source src="https://github.com/rylsherdamz-rgb/stellar-forge/raw/master/media/promo.mp4" type="video/mp4">
-  </video>
 </div>
 
 ---
 
 ## What Is This?
 
-Stellar Forge is **two things that work together**:
+Stellar Forge lets project owners post **software bounties** funded with real XLM or
+USDC, held in a **Soroban escrow contract**. Developers claim work, complete it,
+submit a GitHub Pull Request as proof, and — once the owner approves — the contract
+releases the reward directly to their Stellar wallet.
 
-1. **An AI orchestration layer** (the "Skill") — a set of six specialist agent definitions + a graph engine kernel (`CLAUDE.md`) that routes your requests to the right agents, verifies their output against structured evals, and steers on failure. It runs inside Claude Code or OpenCode.
+> **Stellar Forge is a Stellar-native developer bounty marketplace that uses Soroban
+> smart contracts to escrow and automatically settle XLM or USDC rewards when
+> software work is approved.**
 
-2. **A project scaffold CLI** (`create-stellar-agentic`) — generates a production-ready Stellar monorepo with contracts, frontend, backend, CI/CD, and agent files pre-configured. If you use Claude Code, it auto-installs the Skill too.
+The full product specification lives in [SPEC.md](SPEC.md).
 
-**The CLI bootstraps the project. The Skill builds it.** You can use either independently — together they're a complete workflow.
+## Why Escrow On-Chain?
 
-> **Stellar Forge** is an open-source reference implementation (MIT) demonstrating a supported AI-assisted Stellar development workflow: install the Skill → scaffold with the CLI → build & refine with AI assistance → evaluate against structured checks → validate on Stellar Testnet. See the [Instawards Statement of Work](docs/INSTAWARD-SOW.md) for the full scope.
+Traditional bounty systems depend on trust: developers don't know if a reward is
+actually funded, and owners hesitate to pay before seeing results. Stellar Forge
+combines the reward and the verification into one programmable agreement:
 
----
+```text
+Software Bounty  +  Programmable Escrow  +  Stellar Settlement  +  GitHub Proof
+```
 
-## Who Is This For?
+The reward is deposited into the contract **at creation time**, so every open bounty
+is provably funded. Funds only move on a valid, authorized state transition.
 
-| You are... | Use the... |
+## Core Flow
+
+```text
+Project Owner ──create + deposit──▶ Soroban Escrow ──open──▶ Developer
+      ▲                                                          │
+      │                                                     claim + build
+   approve                                                       │
+      │                                                          ▼
+      └───────────────── review ◀── GitHub PR ◀── submit proof ──┘
+                                          │
+                                     approve & pay
+                                          ▼
+                              Reward released to Developer wallet
+```
+
+## The Escrow Contract
+
+The heart of the product is [`contracts/bounty-escrow`](contracts/bounty-escrow) — a
+Soroban contract that owns the full bounty state machine on-chain.
+
+| Function | Who | Effect |
+|---|---|---|
+| `create_bounty(creator, token, amount, deadline, metadata_hash)` | creator | Pulls the reward into escrow, opens the bounty, returns `id` |
+| `claim_bounty(bounty_id, developer)` | developer | `Open → Claimed` (rejects double-claim, past deadline) |
+| `submit_bounty(bounty_id, developer, submission_hash)` | claiming developer | `Claimed → Submitted` |
+| `approve_bounty(bounty_id)` | creator | Verifies state + auth, **transfers reward**, `Submitted → Completed` |
+| `release_payment(bounty_id)` | creator | Explicit release alias |
+| `cancel_bounty(bounty_id)` | creator | Refunds an unclaimed bounty, `Open → Cancelled` |
+| `refund_bounty(bounty_id)` | creator | Refunds after deadline, `→ Refunded` |
+| `get_bounty(id)` / `next_id()` / `admin()` | anyone | Read-only views |
+
+On-chain status: `Open · Claimed · Submitted · Completed · Cancelled · Expired · Disputed · Refunded`.
+
+**Security model:** only the creator can approve; only the claiming developer can
+submit; `amount > 0`, the deadline, and every state transition are enforced in the
+contract. The frontend is never trusted to decide whether money moves.
+
+### Live on Stellar Testnet
+
+| | |
 |---|---|
-| A Stellar developer who uses Claude Code | Skill — adds 6 agents to your sessions |
-| Starting a new Soroban dApp from scratch | CLI — scaffolds a monorepo with everything wired |
-| Building a paid API with x402/MPP | Both — CLI for structure, Skill for implementation |
-| A hackathon participant shipping fast | Both — one command to scaffold, one prompt to build |
-| Already have a project, want AI assistance | Skill — drops into any existing repo |
-| Evaluating Stellar without Claude Code | CLI — standalone scaffold, no AI required |
+| **Contract ID** | `CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU` |
+| **Admin** | `GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW` |
+| **Explorer** | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU) |
 
----
+See [`data/deployments/testnet.json`](data/deployments/testnet.json).
 
-## Why Not Just Use ChatGPT / Copilot / Cursor?
+## Build & Test the Contract
 
-Generic AI tools don't know Stellar. They don't know that:
-- Contracts must be `#![no_std]` with `soroban-sdk`
-- Wallet connection requires Stellar Wallets Kit (not wagmi)
-- x402 payments need OZ Channels facilitator + CAIP-2 network IDs
-- The correct curve for on-chain ZK verification is BLS12-381, not BN254
+```bash
+# run the full test suite (17 tests: happy path, auth, every failure transition)
+cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
 
-Stellar Forge **embeds that domain knowledge** into 10 installable skills, 6 agent definitions, and 5 eval files. Every agent checks its output against structured pass/fail criteria before handing off. It's not a chat — it's a multi-agent graph engine with domain expertise.
+# build the optimized wasm
+stellar contract build --manifest-path contracts/bounty-escrow/Cargo.toml
 
----
+# deploy to testnet
+stellar contract deploy \
+  --wasm contracts/target/wasm32v1-none/release/bounty_escrow.wasm \
+  --source deployer --network testnet
+```
 
 ## Architecture
 
+```text
+                         STELLAR FORGE
+                              │
+             ┌────────────────┼────────────────┐
+             │                │                │
+        Bounty System    GitHub System    AI Assistant (advisory)
+             │                │                │
+             └────────────────┼────────────────┘
+                              │
+                        Stellar Wallet
+                              │
+                    ┌─────────┴─────────┐
+                    │  Soroban Escrow   │
+                    └─────────┬─────────┘
+                       XLM ───┴─── USDC
+                              │
+                       Developer Wallet
 ```
+
+## Technology Stack
+
+| Layer | Tech |
+|---|---|
+| Smart contract | Soroban, `soroban-sdk`, Rust `#![no_std]` |
+| Frontend | Next.js, TypeScript, Tailwind, shadcn/ui, Stellar Wallets Kit |
+| Backend / API | Next.js API routes / Node.js, TypeScript |
+| Database | PostgreSQL / Supabase (metadata only — **not** the source of truth for funds) |
+| Chain access | Stellar Horizon / Soroban RPC |
+| Auth | Stellar wallet (primary), optional GitHub OAuth |
+| AI | OpenAI-compatible / local LLM (advisory only, never controls funds) |
+
+## Target Repository Structure
+
+```text
 stellar-forge/
-├── SKILL.md          # Entry point — loads the graph engine
-├── CLAUDE.md         # Graph engine kernel — routes tasks as work graphs
-│
-├── agents/           # 6 agent definitions (node prompts)
-│   ├── stellar-contracts.md
-│   ├── stellar-frontend.md
-│   ├── stellar-backend.md
-│   ├── stellar-payments.md
-│   ├── stellar-ops.md
-│   └── stellar-zk.md
-│
-├── skills/           # Domain knowledge (loaded on demand)
-│   ├── smart-contracts/   →  soroban-sdk, WASM, storage, auth, testing
-│   ├── dapp/              →  Wallets Kit, tx building, React hooks
-│   ├── data/              →  RPC + Horizon, event queries
-│   ├── assets/            →  SAC, trustlines, classic tokens
-│   ├── agentic-payments/  →  x402, MPP Charge/Channel
-│   ├── standards/         →  SEPs, CAPs, ecosystem
-│   ├── zk-proofs/         →  Groth16, BLS12-381, Circom/Noir
-│   ├── stellar-mcp/       →  MCP server tools
-│   ├── frontend-design/   →  dApp UI patterns
-│   └── graphify/          →  Knowledge graphs
-│
-├── evals/            # Pass/fail criteria per component
-│   ├── 01-contract-eval.md
-│   ├── 02-frontend-eval.md
-│   └── ...
-│
-├── templates/        # Source templates for CLI scaffold
-│   ├── contracts/    # hello-world, token (SEP-41), vault (milestone escrow)
-│   ├── frontend/
-│   ├── backend/
-│   └── cicd/
-│
-├── packages/
-│   ├── create-stellar-agentic/  # npm-published CLI
-│   └── forge-gateway/           # remote Stellar-context MCP server
-└── .claude/commands/  # Slash commands
+├── apps/web/                 # Next.js app (pages + API routes)
+├── contracts/bounty-escrow/  # Soroban escrow contract  ✅ built + deployed
+├── packages/{stellar,database,github,ai}/
+├── data/deployments/         # recorded on-chain deployments
+├── SPEC.md                   # product specification (source of truth)
+└── README.md
 ```
 
-### How the Pieces Connect
-
-```
-You (prompt)
-   │
-   ▼
-Graph Engine (CLAUDE.md)
-   │  Parses intent, generates a work graph
-   │
-   ├──────────────────┬──────────────────┐
-   │                  │                  │
-   ▼                  ▼                  ▼
-Agent Node 1      Agent Node 2      Agent Node 3
-(contracts)       (frontend)        (backend)
-   │                  │                  │
-   ▼                  ▼                  ▼
-Verifier (eval)   Verifier (eval)   Verifier (eval)
-   │                  │                  │
-   └──────────────────┼──────────────────┘
-                      ▼
-               Synthesize → Report
-```
-
----
-
-## The Kernel
-
-The kernel (`CLAUDE.md`) is the graph engine. It is **not a runtime** — it is a structured prompt that tells the AI how to organize its own work. It defines:
-
-- **Org graph** — 6 agent nodes with zone ownership and persistent context
-- **Work graph generation** — how to wire agents together per task (sequential, parallel, conditional, fan-out, fan-in)
-- **Node execution contract** — what the kernel passes to each agent (intent + context + tools) and what it expects back (output + state delta + verifier result)
-- **Edge definitions** — what data flows between nodes (contract IDs, ABI, payment middleware config, API endpoints)
-- **Failure recovery** — retry same node → reroute to fallback → escalate
-
-Each task gets a dynamically-generated work graph. For `"Build a token contract with a React frontend"`, the graph is:
-
-```
-[contracts] ──(contract_id)──→ [frontend]
-     ↓                              ↓
-  verifier                       verifier
-  (pass)                         (pass) → [kernel: synthesize]
-```
-
----
-
-## The 6 Agents
-
-These are **prompt-based agent definitions** in `agents/*.md`. Each is a structured instruction set (not a running process) that tells the AI which zone it owns, what data it needs, what tools it can use, and what constraints apply.
-
-| Agent | Zone | Input Edge | Output Edge |
-|---|---|---|---|
-| `@stellar-contracts` | Rust smart contracts, WASM, testnet deploy | @stellar-zk (verifier WASM) | → @stellar-frontend (contract IDs) |
-| `@stellar-frontend` | Next.js 15, Wallets Kit, transaction UX | @stellar-contracts (contract IDs) | → @stellar-backend (API needs) |
-| `@stellar-backend` | Express, RPC, event indexers | @stellar-frontend (API shapes), @stellar-payments (middleware) | → @stellar-ops (Dockerfile) |
-| `@stellar-payments` | x402, MPP Charge/Channel, USDC | @stellar-contracts (token addresses) | → @stellar-backend (middleware code) |
-| `@stellar-ops` | CI/CD, Docker, GitHub Actions | All nodes (build artifacts) | → deploy targets |
-| `@stellar-zk` | Groth16 verifiers, Circom, Noir | — | → @stellar-contracts (verifier contract) |
-
-You can customize, add, or remove agents — each is just a markdown file in `agents/`. Register new agents in the `CLAUDE.md` org graph table.
-
----
-
-## Installation
-
-### Which One?
-
-| I want to... | Install this |
-|---|---|
-| Add AI orchestration to an existing Stellar project | **Skill** → `npx skills add rylsherdamz-rgb/stellar-forge` |
-| Scaffold a brand-new Stellar dApp monorepo | **CLI** → `npx create-stellar-agentic my-dapp` |
-| Build a dApp with AI assistance (recommended) | **Both** — CLI scaffolds the project, Skill builds it |
-| Use AI agents without Claude Code | **CLI only** — standalone scaffolding, no AI required |
-
-### Skill (AI Orchestration)
-
-```bash
-# For Claude Code or OpenCode
-npx skills add rylsherdamz-rgb/stellar-forge
-
-# Specify the agent
-npx skills add rylsherdamz-rgb/stellar-forge --agent claude-code
-npx skills add rylsherdamz-rgb/stellar-forge --agent opencode
-```
-
-After installing, start a session and prompt:
-
-> *"Build a token contract with a React frontend and x402 payments"*
-
-The graph engine routes to the relevant agents, each with domain skills and evals loaded. Outputs are verified against pass/fail criteria, with up to 3 retries on failure.
-
-### CLI (Project Scaffold)
-
-```bash
-npx create-stellar-agentic my-dapp
-
-# or install globally
-npm install -g create-stellar-agentic
-create-stellar-agentic my-dapp --yes
-```
-
-This generates a production-ready monorepo:
-
-```
-my-dapp/
-├── contracts/          # Rust smart contracts (hello-world + SEP-41 token)
-├── frontend/           # Next.js 15 + Wallets Kit + hooks + components
-├── backend/            # Express + RPC + x402/MPP payment middleware
-├── .github/workflows/  # CI/CD for contracts, frontend, backend
-├── scripts/            # deploy-contract.sh (test gate → deploy → record)
-├── agents/             # 6 agent definitions (works with Claude Code)
-├── evals/              # Eval criteria per component
-├── CLAUDE.md           # Graph engine kernel
-└── SKILL.md            # Orchestration entry point
-```
-
-**Killer feature: the CLI automatically installs the Skill.** When you run `npx create-stellar-agentic`, it copies all 10 skills to `~/.claude/skills/` and sets up the `CLAUDE.md` kernel. Opening the generated project in Claude Code instantly activates the full multi-agent harness — no extra steps.
-
-### CLI Options
-
-| Flag | Description |
-|---|---|
-| `--yes` / `-y` | Skip all prompts |
-| `--template <type>` | `full` (default), `contract-only`, `frontend-only`, `backend-only`, `payment-only` |
-| `--skill-only <dir>` | Install only skill files into an existing project |
-| `--no-install` | Skip npm install after scaffold |
-
----
-
-## Features
-
-### Agentic Kit Hooks (no raw RPC)
-
-| Hook | Import | Use |
-|---|---|---|
-| `useStellarData()` | `@/hooks/use-stellar-data` | Balances, contract queries, events, transactions |
-| `useContract(id)` | `@/hooks/use-contract` | `read()` (simulation) / `write()` (sign+submit) |
-| `useStellarWallet()` | `@/hooks/use-stellar-wallet` | Connect, disconnect, sign, getBalances |
-| `useWallet()` | `@/providers/wallet-provider` | Context wrapper |
-
-### Eval-Driven Pipeline
-
-Each agent's output is checked against structured pass/fail criteria. If it fails, the kernel feeds the failure details back as corrective context (max 3 retries).
-
-| Eval | Checks |
-|---|---|
-| 01-contract | WASM compiles, tests pass, auth on privileged fns, TTL on writes, deploy gate |
-| 02-frontend | TypeScript compiles, wallet connect/disconnect, contract read/write, no raw RPC |
-| 03-backend | Server starts, balance + contract endpoints, CORS |
-| 04-payment | x402 rejects unpaid with 402, accepts valid payment |
-| 05-framework | All agents produced output, all evals ran, graphify completed |
-
-### MCP Integrations
-
-| Server | Tools |
-|---|---|
-| stellar-rpc | `get_account`, `get_contract_data`, `simulate_transaction` |
-| filesystem | `read_file`, `write_file`, `list_directory` |
-| github | `create_or_update_file`, `search_repos`, `create_pull_request` |
-| playwright | `browser_navigate`, `browser_click`, `browser_screenshot` |
-
-### Forge Gateway (remote Stellar-context MCP server)
-
-`packages/forge-gateway` — a Raven-style gateway that exposes the framework's curated Stellar knowledge (skills, evals, standards, ecosystem intel) to any MCP client over HTTP. Built with the Streamable HTTP transport.
-
-```bash
-npm run gateway            # start on :8787 (POST /mcp, /api/search, /api/execute, /playground)
-npm run gateway:test       # 10/10 unit tests
-npm run gateway:check-live # probe Soroban RPC, Horizon, npm, docs site, GitHub
-```
-
-| Tool | Purpose |
-|---|---|
-| `search` | Ranked catalog search across 61 curated Stellar resources |
-| `execute` | Sandboxed execution of catalog operations (no fs/network in sandbox) |
-| `catalog_summary` | Catalog overview by type |
-
-### Forge Vault (milestone escrow)
-
-`templates/contracts/vault` — a trustless milestone-escrow contract. The depositor commits funds against release keys; the recipient claims each milestone by presenting the matching sha256 preimage; the arbiter can override (release or refund); the depositor recovers unclaimed funds after the deadline.
-
-```bash
-cargo test --manifest-path templates/contracts/vault/Cargo.toml  # 9/9 tests
-```
-
-**Live on Stellar Testnet:** `CB2JGINPQP6DSWEY6N5XOWOSVOW6IPCNLSM2AQWVKP3LTVSQ3SQSHKFZ` (see `data/deployments/testnet.json`).
-
-### Contract Deployment
-
-Test-gated deployment — `cargo test` must pass or the deploy aborts.
-
-- **First deploy** on a network: auto-deploys, records to `data/deployments/`, updates `.env`
-- **Subsequent deploys**: prompts for confirmation
-
----
-
-## Configuration
-
-### Releases & npm auto-publish
-
-Tagging `v<semver>` on `master` triggers:
-- **npm publish** — `.github/workflows/publish-npm.yml` verifies the tag matches `packages/create-stellar-agentic/package.json`'s version, gates on the gateway tests, then publishes to npm (needs the `NPM_TOKEN` secret)
-- **Site deploy** — handled by Vercel's own Git integration on every push (no GitHub workflow needed)
-
-Bump the version first, then tag:
-
-```bash
-npm version patch -w create-stellar-agentic && git push --tags
-```
-
-### Environment Variables
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `STELLAR_RPC_URL` | No | `https://soroban-testnet.stellar.org` | RPC endpoint |
-| `STELLAR_NETWORK_PASSPHRASE` | No | `Test SDF Network ; September 2015` | Network passphrase |
-| `STELLAR_SECRET_KEY` | For deploy | — | Deployer account secret |
-| `STELLAR_DEPLOYER` | For deploy | `deployer` | Stellar CLI source account |
-| `OZ_CHANNEL_ID` | For x402 | — | OZ Channels facilitator ID |
-| `OZ_API_KEY` | For x402 | — | OZ Channels API key |
-
----
-
-## FAQ
-
-**Can I use this without Claude Code?**  
-Yes. `npx create-stellar-agentic` works standalone. The graph engine only activates in Claude Code sessions.
-
-**What networks are supported?**  
-Testnet (default), mainnet, and local/testcontainer. Mainnet requires explicit env opt-in.
-
-**How do eval retries work?**  
-Each agent gets max 3 attempts. On failure, the kernel feeds the eval failure details back as corrective context for the retry.
-
-**How do I add my own agent?**  
-Create an agent file in `agents/`, register it in `CLAUDE.md`'s org graph table, and add its eval to `evals/`.
-
-**My contracts don't compile — what SDK version?**  
-Template contracts target `soroban-sdk = "27.0.0-rc.1"`. Run `cargo update` for a newer patch.
-
-**How does the vault escrow work?**  
-The depositor commits funds via `deposit`; the recipient calls `claim_milestone(index, proof)` where `sha256(proof)` must equal the stored release key. The arbiter can `release`/`refund` regardless, and the depositor `recover`s unclaimed funds after the deadline. See `templates/contracts/vault/src/lib.rs`.
-
-**How does the npm release flow work?**  
-Tag `v<version>` → CI verifies the tag matches `packages/create-stellar-agentic/package.json`, runs tests, publishes to npm, and redeploys the site. Push tags after bumping the version.
-
----
+## Design Principles
+
+1. **Stellar first** — settlement and escrow are essential, not decorative.
+2. **Blockchain where trust matters** — money and state on-chain; descriptions and UI off-chain.
+3. **AI is assistive** — it drafts bounties and summarizes submissions; it never touches funds.
+4. **Human approval** — a person decides whether work is accepted.
+5. **Verifiable payments** — every reward is a verifiable Stellar transaction.
+6. **Minimal MVP** — prove real task + real developer + real escrow + real Stellar settlement.
+
+## Roadmap
+
+- **V1** — Bounties + Soroban escrow + XLM/USDC + GitHub _(current)_
+- **V2** — Milestones, multiple reviewers, reputation, notifications, org accounts
+- **V3** — AI code review, automated requirement checking, advanced disputes, teams
+- **V4** — Agentic bounties, x402/MPP, machine-to-machine payments
 
 ## Related
 
-
-- [Documentation & Demo](https://stellar-agentic-framework.vercel.app)
 - [Stellar Documentation](https://developers.stellar.org/docs)
+- [Soroban Smart Contracts](https://developers.stellar.org/docs/build/smart-contracts)
 - [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit)
-- [Stellar Agentic Kit](https://github.com/stellar/stellar-agentic-kit)
-- [OpenZeppelin Stellar Contracts](https://github.com/OpenZeppelin/stellar-contracts)
 
 ---
 
 <p align="center">
-  <sub>Built with Stellar Forge · <a href="https://stellar-agentic-framework.vercel.app">Website</a> · <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a> · <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a></sub>
+  <sub>Built with Stellar Forge · <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a> · MIT</sub>
 </p>

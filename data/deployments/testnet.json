@@ -9,6 +9,17 @@
       "deployed_at": "2026-08-16T18:45:00Z",
       "source": "templates/contracts/vault",
       "wasm_size_bytes": 21562
+    },
+    {
+      "name": "bounty-escrow",
+      "contract_id": "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU",
+      "wasm_hash": "bc81fb2ddaa063fa967527b96853d17f78ee991497d62cd79d62b8ff75039764",
+      "deployed_at": "2026-09-09T20:10:00Z",
+      "source": "contracts/bounty-escrow",
+      "wasm_size_bytes": 9507,
+      "admin": "GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW",
+      "initialized": true,
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU"
     }
   ]
 }
