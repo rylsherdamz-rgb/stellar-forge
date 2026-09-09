@@ -27,7 +27,7 @@ function contract(): Contract {
 export function xlmToStroops(amount: string): bigint {
   const [whole, frac = ""] = amount.split(".");
   const fracPadded = (frac + "0000000").slice(0, 7);
-  return BigInt(whole || "0") * 10_000_000n + BigInt(fracPadded || "0");
+  return BigInt(whole || "0") * BigInt(10000000) + BigInt(fracPadded || "0");
 }
 
 async function buildInvoke(

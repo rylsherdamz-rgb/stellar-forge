@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime bounty metadata store (JSON metadata layer)
+/data/bounties.json

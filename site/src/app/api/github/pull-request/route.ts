@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifySubmission } from "@stellar-forge/github";
+import { verifySubmission } from "@/lib/github";
 
 // GET /api/github/pull-request?prUrl=...&repo=owner/repo&login=dev
 // Verifies a PR exists, is in the expected repo, and matches the developer.

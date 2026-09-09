@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBounty, updateBounty, type BountyStatus } from "@/lib/store";
 import { submitSigned, readBounty } from "@/lib/contract";
-import { verifySubmission } from "@stellar-forge/github";
+import { verifySubmission } from "@/lib/github";
 
 // POST /api/bounties/:id/confirm
 // Body: { action, signedXdr, address, ...meta }
