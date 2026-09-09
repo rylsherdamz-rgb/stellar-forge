@@ -5,6 +5,9 @@
   "description": "Stellar Wallets Kit integration + bounty-escrow contract client for Stellar Forge. Wallet signs; the contract decides.",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "scripts": {
     "test": "node --test"
   },
