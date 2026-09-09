@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { rpc, Contract, TransactionBuilder, BASE_FEE, scValToNative } from "@stellar/stellar-sdk";
 import { CONFIG } from "@/lib/config";
 
-// GET /api/chain — returns { nextId, latestLedger } for the create flow.
+// GET /api/chain - returns { nextId, latestLedger } for the create flow.
 export async function GET() {
   const server = new rpc.Server(CONFIG.rpcUrl, { allowHttp: false });
   try {

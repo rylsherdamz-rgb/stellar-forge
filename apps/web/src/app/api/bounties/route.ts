@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { listBounties, createBounty } from "@/lib/store";
 
-// GET /api/bounties — public list of bounties (metadata + on-chain link)
+// GET /api/bounties - public list of bounties (metadata + on-chain link)
 export async function GET() {
   const bounties = await listBounties();
   return NextResponse.json({ bounties });
 }
 
-// POST /api/bounties — create the off-chain metadata record (status OPEN,
+// POST /api/bounties - create the off-chain metadata record (status OPEN,
 // escrowId null). The on-chain deposit is confirmed separately via
 // /api/bounties/:id/confirm-create once the wallet signs create_bounty.
 export async function POST(req: Request) {

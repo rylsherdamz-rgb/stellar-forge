@@ -1,6 +1,6 @@
 // Lightweight metadata layer (SOW Deliverable 2 / §29).
 //
-// The database is NOT the source of truth for funds — the Soroban contract is.
+// The database is NOT the source of truth for funds - the Soroban contract is.
 // This store keeps off-chain descriptions and submission records and LINKS them
 // to on-chain state via `escrowId` (the contract bounty id) and tx hashes.
 //
@@ -44,7 +44,7 @@ export interface Bounty {
   creator: string; // wallet address
   claimedBy: string | null;
   submission: Submission | null;
-  // On-chain evidence (tx hashes) — independently verifiable.
+  // On-chain evidence (tx hashes) - independently verifiable.
   tx: {
     created?: string;
     claimed?: string;

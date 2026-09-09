@@ -18,7 +18,7 @@ export default function Nav() {
         <div className="links">
           <Link href="/bounties">Bounties</Link>
           <Link href="/create">Create</Link>
-          <button className="btn btn-primary" onClick={connect} disabled={connecting}>
+          <button className="btn btn-primary wallet-btn" onClick={connect} disabled={connecting}>
             {address ? short(address) : connecting ? "Connecting…" : "Connect Wallet"}
           </button>
         </div>

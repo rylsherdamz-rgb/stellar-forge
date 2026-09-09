@@ -63,7 +63,7 @@ export default function CreatePage() {
       <div className="container" style={{ maxWidth: 640 }}>
         <h2 className="section-title">Create a bounty</h2>
         <p style={{ color: "var(--text-dim)", marginTop: -10 }}>
-          The reward is deposited into the Soroban escrow contract when you sign —
+          The reward is deposited into the Soroban escrow contract when you sign -
           the bounty is funded on creation.
         </p>
 

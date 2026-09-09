@@ -12,7 +12,7 @@ export const CONFIG = {
   contractId:
     process.env.NEXT_PUBLIC_CONTRACT_ID ||
     "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU",
-  // Native XLM Stellar Asset Contract on testnet — the required settlement token.
+  // Native XLM Stellar Asset Contract on testnet - the required settlement token.
   xlmSac:
     process.env.NEXT_PUBLIC_XLM_SAC ||
     "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",

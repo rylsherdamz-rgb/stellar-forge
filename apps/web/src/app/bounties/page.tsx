@@ -18,7 +18,7 @@ export default function BountiesPage() {
   return (
     <section className="block">
       <div className="container">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="row-between" style={{ marginBottom: 20 }}>
           <h2 className="section-title">Bounties</h2>
           <Link href="/create" className="btn btn-primary">
             Create a Bounty
@@ -26,7 +26,11 @@ export default function BountiesPage() {
         </div>
 
         {loading ? (
-          <p style={{ color: "var(--text-dim)" }}>Loading…</p>
+          <div className="grid">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="skeleton" />
+            ))}
+          </div>
         ) : bounties.length === 0 ? (
           <div className="notice info">
             No bounties yet. <Link href="/create" style={{ color: "var(--accent)" }}>Create the first one.</Link>

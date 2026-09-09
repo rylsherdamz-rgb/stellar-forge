@@ -2,7 +2,7 @@
 //
 // Builds unsigned transaction XDRs for each lifecycle action. The wallet signs
 // them (Stellar Wallets Kit); the app never holds keys. The contract is the
-// source of truth — this client only assembles and submits what the user signs.
+// source of truth - this client only assembles and submits what the user signs.
 
 import {
   rpc,
