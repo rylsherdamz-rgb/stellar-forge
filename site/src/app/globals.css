@@ -449,3 +449,70 @@ footer p { color: var(--text-muted); font-size: 0.8rem; }
   .agents-grid { grid-template-columns: 1fr; }
   .hero { min-height: auto; padding: 120px 0 60px; }
 }
+
+/* ── Bounty marketplace redesign ─────────────────────────────── */
+
+.hero-lead { max-width: 620px; margin: 0 auto 28px; color: var(--text-dim); }
+
+/* Example bounty card in the hero */
+.bounty-preview {
+  max-width: 460px; margin: 36px auto 0; text-align: left;
+  background: linear-gradient(180deg, var(--surface2), var(--surface));
+  border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(124,58,237,0.04);
+  transition: transform .3s, border-color .3s, box-shadow .3s;
+}
+.bounty-preview:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hover);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 0 0 1px var(--accent-glow);
+}
+.bounty-preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.bounty-status { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.3px; }
+.bounty-status.open { color: var(--green); }
+.bounty-reward {
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.95rem;
+  color: var(--text); background: rgba(124,58,237,0.12);
+  border: 1px solid var(--accent-glow); padding: 4px 10px; border-radius: 8px;
+}
+.bounty-preview h3 { font-size: 1.05rem; margin: 0 0 6px; }
+.bounty-preview > p { color: var(--text-dim); font-size: 0.85rem; margin: 0 0 14px; }
+.bounty-preview-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.74rem; color: var(--text-muted); margin-bottom: 16px; }
+.bounty-preview-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.bounty-preview-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 14px; }
+.bounty-chip { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
+.bounty-claim {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  padding: 8px 14px; font-size: 0.8rem; font-weight: 600; transition: all .2s;
+}
+.bounty-claim:hover { background: #6d28d9; transform: translateX(2px); }
+
+/* Live-on-testnet contract panel */
+.contract-panel {
+  max-width: 780px; margin: 8px auto 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.contract-row {
+  display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; align-items: center;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.contract-row:last-child { border-bottom: none; }
+.contract-key { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.contract-val {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.contract-fns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 780px; margin: 20px auto 0; }
+.contract-fn {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--text-dim);
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px;
+  transition: all .2s;
+}
+.contract-fn:hover { color: var(--text); border-color: var(--accent); }
+
+@media (max-width: 640px) {
+  .contract-row { grid-template-columns: 1fr; gap: 6px; }
+  .contract-val { font-size: 0.7rem; }
+}
