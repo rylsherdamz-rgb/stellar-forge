@@ -83,3 +83,15 @@ jobs:
       - name: cargo test (${{ matrix.crate }})
         working-directory: templates/contracts/${{ matrix.crate }}
         run: cargo test
+
+  bounty-escrow:
+    name: Bounty Escrow Contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/bounty-escrow
+      - name: cargo test (bounty-escrow)
+        run: cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
