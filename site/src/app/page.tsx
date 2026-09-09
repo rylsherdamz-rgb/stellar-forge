@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Box, Layout, Server, CreditCard, ShieldCheck, GitBranch, Cable, Vault, ArrowRight, Copy, Check, Cpu, Network, Workflow, Zap, BookOpen, FileCode } from "lucide-react";
+import { Box, Server, CreditCard, ShieldCheck, GitBranch, Vault, ArrowRight, Copy, Check, Cpu, Workflow, Wallet, Search, Users, Lock } from "lucide-react";
 import StatsBar, { StarButton } from "../components/RepoStats";
 
 gsap.registerPlugin(ScrollTrigger);
+
+const CONTRACT_ID = "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU";
+const ADMIN = "GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW";
+const EXPLORER = `https://stellar.expert/explorer/testnet/contract/${CONTRACT_ID}`;
 
 const features = [
   { icon: Vault, title: "On-Chain Escrow", desc: "Rewards are deposited into a Soroban contract at creation — every open bounty is provably funded." },
@@ -19,29 +23,19 @@ const features = [
   { icon: Server, title: "Verifiable Settlement", desc: "Every reward is a real Stellar transaction — the whole history is independently verifiable." },
 ];
 
-const agents = [
-  { handle: "@stellar-contracts", role: "Rust smart contract engineer", skills: ["soroban-sdk", "WASM", "deploy"], edgeOut: "contract IDs, ABI" },
-  { handle: "@stellar-frontend", role: "dApp frontend developer", skills: ["React", "Wallets Kit", "Tailwind"], edgeIn: "contract IDs", edgeOut: "API route specs" },
-  { handle: "@stellar-backend", role: "API and indexer engineer", skills: ["RPC", "Horizon", "Data"], edgeIn: "payment middleware, API needs" },
-  { handle: "@stellar-payments", role: "Payment flow architect", skills: ["USDC", "Paywall", "MPP"], edgeOut: "middleware code" },
-  { handle: "@stellar-ops", role: "DevOps and platform engineer", skills: ["CI/CD", "Docker", "GitHub Actions"], edgeIn: "build artifacts from all nodes" },
-  { handle: "@stellar-zk", role: "Zero-knowledge engineer", skills: ["Groth16", "Circom", "Noir"], edgeOut: "verifier contract WASM" },
+const whyCards = [
+  { icon: Vault, title: "Provably funded", desc: "The reward is escrowed the moment a bounty is created. Developers never chase an unfunded promise." },
+  { icon: GitBranch, title: "Proof, not trust", desc: "A GitHub Pull Request — verified for repo and author — is the objective evidence that work was done." },
+  { icon: Lock, title: "Money stays on-chain", desc: "The Soroban contract holds and releases funds. The frontend and the database can never move them." },
+  { icon: Wallet, title: "You keep your keys", desc: "Every action is signed with Stellar Wallets Kit. Forge never sees a private key or seed phrase." },
 ];
 
 const ROUTES = [
   { label: "Why", href: "#why" },
-  { label: "Architecture", href: "#architecture" },
-  { label: "Kernel", href: "#kernel" },
-  { label: "Install", href: "#install" },
-  { label: "Agents", href: "#agents" },
-  { label: "Usage", href: "#usage" },
-];
-
-const installMatrix = [
-  { want: "Add AI orchestration to an existing Stellar project", use: "Skill → npx skills add ..." },
-  { want: "Scaffold a brand-new Stellar dApp monorepo", use: "CLI → npx create-stellar-agentic" },
-  { want: "Build a dApp with AI assistance (recommended)", use: "Both — CLI scaffolds, Skill builds" },
-  { want: "Use AI agents without Claude Code", use: "CLI only — standalone scaffolding" },
+  { label: "How It Works", href: "#how" },
+  { label: "Features", href: "#features" },
+  { label: "Contract", href: "#contract" },
+  { label: "Get Started", href: "#start" },
 ];
 
 function CopyButton({ getText, children, className = "" }: { getText: () => string; children?: React.ReactNode; className?: string }) {
@@ -63,10 +57,10 @@ function useSectionAnim(ref: React.RefObject<HTMLDivElement | null>, cardSel: st
     const title = el.querySelector(".section-title")!;
     const sub = el.querySelector(".section-sub");
     const ctx = gsap.context(() => {
-      gsap.fromTo(label, { autoAlpha: 0, x: -10 }, { autoAlpha: 1, x: 0, duration: 0.4, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 87%" } });
-      gsap.fromTo(title, { autoAlpha: 0, y: 15 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 87%" } });
+      if (label) gsap.fromTo(label, { autoAlpha: 0, x: -10 }, { autoAlpha: 1, x: 0, duration: 0.4, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 87%" } });
+      if (title) gsap.fromTo(title, { autoAlpha: 0, y: 15 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 87%" } });
       if (sub) gsap.fromTo(sub, { autoAlpha: 0, y: 15 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 87%" } });
-      gsap.fromTo(cards, { autoAlpha: 0, y: 20, ...(opts?.extra || {}) }, { autoAlpha: 1, y: 0, duration: 0.45, stagger: opts?.stagger || 0.07, ease: "back.out(1.4)", scrollTrigger: { trigger: el, start: "top 82%" } });
+      if (cards.length) gsap.fromTo(cards, { autoAlpha: 0, y: 20, ...(opts?.extra || {}) }, { autoAlpha: 1, y: 0, duration: 0.45, stagger: opts?.stagger || 0.07, ease: "back.out(1.4)", scrollTrigger: { trigger: el, start: "top 82%" } });
     });
     return () => ctx.revert();
   }, []);
@@ -88,74 +82,24 @@ function Logomark({ size = 24 }: { size?: number }) {
   );
 }
 
-const PKG_TABS = [
-  {
-    id: "npx",
-    label: "npx",
-    skill: "npx skills add rylsherdamz-rgb/stellar-forge",
-    cli:   "npx create-stellar-agentic my-dapp --yes",
-  },
-  {
-    id: "npm",
-    label: "npm",
-    skill: "npm exec skills add rylsherdamz-rgb/stellar-forge",
-    cli:   "npm create stellar-agentic@latest my-dapp -- --yes",
-  },
-  {
-    id: "pnpm",
-    label: "pnpm",
-    skill: "pnpm dlx skills add rylsherdamz-rgb/stellar-forge",
-    cli:   "pnpm create stellar-agentic my-dapp --yes",
-  },
-  {
-    id: "yarn",
-    label: "yarn",
-    skill: "yarn dlx skills add rylsherdamz-rgb/stellar-forge",
-    cli:   "yarn create stellar-agentic my-dapp --yes",
-  },
-];
-
-function HeroInstallBlock() {
-  const [active, setActive] = useState("npx");
-  const [flashedSkill, setFlashedSkill] = useState(false);
-  const [flashedCli, setFlashedCli] = useState(false);
-  const tab = PKG_TABS.find((t) => t.id === active)!;
-
-  const copy = (text: string, which: "skill" | "cli") => {
-    navigator.clipboard.writeText(text);
-    if (which === "skill") { setFlashedSkill(true); setTimeout(() => setFlashedSkill(false), 1200); }
-    else                   { setFlashedCli(true);   setTimeout(() => setFlashedCli(false),   1200); }
-  };
-
+/** A live-looking example bounty card shown in the hero. */
+function BountyPreview() {
   return (
-    <div className="hero-install">
-      <div className="hero-install-tabs">
-        {PKG_TABS.map((t) => (
-          <button
-            key={t.id}
-            className={`hero-install-tab${active === t.id ? " active" : ""}`}
-            onClick={() => setActive(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="bounty-preview">
+      <div className="bounty-preview-head">
+        <span className="bounty-status open">● Open</span>
+        <span className="bounty-reward">25 USDC</span>
       </div>
-      <div className="hero-install-body">
-        <button className="hero-install-row" onClick={() => copy(tab.skill, "skill")} title="Click to copy">
-          <span className="hero-install-badge">Skill</span>
-          <code className={`hero-install-cmd${flashedSkill ? " flashed" : ""}`}>
-            {flashedSkill ? "Copied!" : tab.skill}
-          </code>
-          <Copy size={13} style={{ flexShrink: 0, color: flashedSkill ? "var(--green)" : "var(--text-muted)", transition: "color .15s" }} />
-        </button>
-        <div className="hero-install-divider" />
-        <button className="hero-install-row" onClick={() => copy(tab.cli, "cli")} title="Click to copy">
-          <span className="hero-install-badge">CLI</span>
-          <code className={`hero-install-cmd${flashedCli ? " flashed" : ""}`}>
-            {flashedCli ? "Copied!" : tab.cli}
-          </code>
-          <Copy size={13} style={{ flexShrink: 0, color: flashedCli ? "var(--green)" : "var(--text-muted)", transition: "color .15s" }} />
-        </button>
+      <h3>Fix mobile navigation bug</h3>
+      <p>Fix the mobile nav, preserve desktop behavior, and add a regression test.</p>
+      <div className="bounty-preview-meta">
+        <span><GitBranch size={12} /> alice/project</span>
+        <span><Lock size={12} /> escrowed</span>
+        <span>⏳ 5 days</span>
+      </div>
+      <div className="bounty-preview-foot">
+        <span className="bounty-chip">Testnet</span>
+        <button className="bounty-claim">Claim bounty <ArrowRight size={13} /></button>
       </div>
     </div>
   );
@@ -165,21 +109,19 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const whyRef = useRef<HTMLDivElement>(null);
-  const archRef = useRef<HTMLDivElement>(null);
-  const kernelRef = useRef<HTMLDivElement>(null);
-  const installRef = useRef<HTMLDivElement>(null);
+  const howRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
-  const agentsRef = useRef<HTMLDivElement>(null);
-  const usageRef = useRef<HTMLDivElement>(null);
+  const contractRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const hero = heroRef.current;
     const glow = glowRef.current;
     if (!hero || !glow) return;
     gsap.fromTo(hero.querySelector("h1"), { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" });
-    gsap.fromTo(hero.querySelector("p"), { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out", delay: 0.2 });
+    gsap.fromTo(hero.querySelector(".hero-lead"), { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out", delay: 0.15 });
     gsap.fromTo(hero.querySelector(".hero-actions"), { autoAlpha: 0, y: 15 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power3.out", delay: 0.3 });
-    gsap.fromTo(hero.querySelector(".hero-mini-term"), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out", delay: 0.5 });
+    gsap.fromTo(hero.querySelector(".bounty-preview"), { autoAlpha: 0, y: 24, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out", delay: 0.4 });
     const ctx = gsap.context(() => {
       ScrollTrigger.create({ trigger: hero, start: "top top", end: "bottom top", onUpdate: (self) => { gsap.set(glow, { y: self.progress * 80, scale: 1 + self.progress * 0.15, opacity: 1 - self.progress * 0.4 }); } });
     }, hero);
@@ -187,12 +129,10 @@ export default function Home() {
   }, []);
 
   useSectionAnim(whyRef, ".why-card", { stagger: 0.1 });
-  useSectionAnim(archRef, ".arch-pipe-card", { stagger: 0.08 });
-  useSectionAnim(kernelRef, ".kernel-card", { stagger: 0.08 });
-  useSectionAnim(installRef, ".install-card", { stagger: 0.12 });
+  useSectionAnim(howRef, ".arch-pipe-card", { stagger: 0.08 });
   useSectionAnim(featuresRef, ".card", { stagger: 0.07 });
-  useSectionAnim(agentsRef, ".agent-card", { stagger: 0.06, extra: { scale: 0.95 } });
-  useSectionAnim(usageRef, ".step", { stagger: 0.1, extra: { x: -20 } });
+  useSectionAnim(contractRef, ".contract-row", { stagger: 0.08 });
+  useSectionAnim(startRef, ".step", { stagger: 0.1, extra: { x: -20 } });
 
   return (
     <>
@@ -201,7 +141,7 @@ export default function Home() {
           <a href="/" className="logo"><Logomark size={22} /> Stellar <em>Forge</em></a>
           <div className="links">
             {ROUTES.map((r) => <a key={r.label} href={r.href}>{r.label}</a>)}
-            <a href="#install" className="nav-cta">Get Started</a>
+            <a href="#start" className="nav-cta">Explore Bounties</a>
             <StarButton />
           </div>
         </div>
@@ -211,13 +151,17 @@ export default function Home() {
         <div className="hero-glow" ref={glowRef} />
         <div className="container hero-inner">
           <h1><span>Fund software work.</span><br />Get paid on Stellar.</h1>
-          <p>
+          <p className="hero-lead">
             A <strong>Stellar-native developer bounty &amp; escrow marketplace</strong>. Post a funded bounty,
             and the reward is held in a <strong>Soroban smart contract</strong>. Developers claim the work,
             submit a GitHub Pull Request as proof, and — once you approve — the contract releases XLM or
-            USDC straight to their wallet. The blockchain controls the money, not the frontend.
+            USDC straight to their wallet.
           </p>
-          <HeroInstallBlock />
+          <div className="hero-actions">
+            <a href="#start" className="btn btn-primary"><Search size={16} /> Explore Bounties</a>
+            <a href="#how" className="btn btn-secondary"><Vault size={16} /> How It Works</a>
+          </div>
+          <BountyPreview />
           <StatsBar />
         </div>
       </section>
@@ -238,34 +182,24 @@ export default function Home() {
       <section id="why" className="section-alt" ref={whyRef}>
         <div className="container">
           <span className="section-label">Why This Exists</span>
-          <h2 className="section-title">Bounties shouldn't run on trust</h2>
-          <p className="section-sub">Traditional bounty boards separate payment from proof: developers don't know a reward is funded, and creators hesitate to pay before seeing results. Stellar Forge escrows the reward on-chain the moment a bounty is created, and releases it only on an authorized, verifiable state transition.</p>
+          <h2 className="section-title">Bounties shouldn&apos;t run on trust</h2>
+          <p className="section-sub">Traditional bounty boards separate payment from proof: developers don&apos;t know a reward is funded, and creators hesitate to pay before seeing results. Stellar Forge escrows the reward on-chain the moment a bounty is created, and releases it only on an authorized, verifiable state transition.</p>
           <div className="why-grid">
-            <div className="why-card">
-              <div className="why-icon"><FileCode size={18} /></div>
-              <h3>Domain Skills</h3>
-              <p>10 bundled knowledge skills (soroban-sdk, Wallets Kit, x402, Groth16, SEPs, MCP, etc.) — loaded on demand, not dumped into context.</p>
-            </div>
-            <div className="why-card">
-              <div className="why-icon"><Cpu size={18} /></div>
-              <h3>Graph Engine Orchestration</h3>
-              <p>Not a chat. The kernel builds a work graph per task — which agents, in what order, sharing what state — and verifies each node before proceeding.</p>
-            </div>
-            <div className="why-card">
-              <div className="why-icon"><Zap size={18} /></div>
-              <h3>Eval-Driven Pipeline</h3>
-              <p>Every output checked against structured pass/fail evals. Fail → retry with corrective context (max 3). Pass → hand off to next node. No blind trust.</p>
-            </div>
-            <div className="why-card">
-              <div className="why-icon"><BookOpen size={18} /></div>
-              <h3>CLI Bootstraps, Skill Builds</h3>
-              <p>The CLI scaffolds a production-ready monorepo (contracts + frontend + backend + CI/CD). The Skill activates AI agents inside it. Together they're a complete workflow.</p>
-            </div>
+            {whyCards.map((c, i) => {
+              const Icon = c.icon;
+              return (
+                <div key={i} className="why-card">
+                  <div className="why-icon"><Icon size={18} /></div>
+                  <h3>{c.title}</h3>
+                  <p>{c.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section id="architecture" ref={archRef}>
+      <section id="how" ref={howRef}>
         <div className="container">
           <span className="section-label">How It Works</span>
           <h2 className="section-title">From funded bounty to settled payment</h2>
@@ -284,116 +218,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="kernel" className="section-alt" ref={kernelRef}>
-        <div className="container">
-          <span className="section-label">The Kernel</span>
-          <h2 className="section-title">Graph Engine (CLAUDE.md)</h2>
-          <p className="section-sub">The kernel is not a runtime — it is a structured prompt that tells the AI how to organize its own work. It generates a work graph for every task.</p>
-          <div className="kernel-grid">
-            <div className="kernel-card">
-              <div className="kernel-icon"><Network size={18} /></div>
-              <h3>Org Graph</h3>
-              <p>6 agent nodes, each with zone ownership, persistent context, and edge definitions. Stable across sessions.</p>
-            </div>
-            <div className="kernel-card">
-              <div className="kernel-icon"><Workflow size={18} /></div>
-              <h3>Work Graph</h3>
-              <p>Per-task dynamic wiring: sequential, parallel, conditional, fan-out, fan-in. Determined by data dependencies, not hardcoded order.</p>
-            </div>
-            <div className="kernel-card">
-              <div className="kernel-icon"><Server size={18} /></div>
-              <h3>Node Contract</h3>
-              <p>Each node gets intent + context + tools. Returns output + state delta + verifier result. No node writes code outside its zone.</p>
-            </div>
-            <div className="kernel-card">
-              <div className="kernel-icon"><GitBranch size={18} /></div>
-              <h3>Dynamic Orgs</h3>
-              <p>Graph rewrites itself: spawn nodes mid-task, reroute on failure, collapse on early convergence, reorder on priority shift.</p>
-            </div>
-            <div className="kernel-card">
-              <div className="kernel-icon"><ShieldCheck size={18} /></div>
-              <h3>Eval Gate</h3>
-              <p>After each node, run its verifier. Pass → proceed. Fail → retry with corrective context (max 3) → reroute to fallback → escalate.</p>
-            </div>
-            <div className="kernel-card">
-              <div className="kernel-icon"><Zap size={18} /></div>
-              <h3>Edge Context</h3>
-              <p>Shared state (contract IDs, deploy records, .env) travels along edges. Nodes never rediscover what sibling nodes already computed.</p>
-            </div>
-          </div>
-          <div className="workgraph-diagram">
-            <div className="workgraph-label">Example work graph: <em>"Build a token contract with a React frontend"</em></div>
-            <div className="workgraph-body">
-              <span className="wg-node">[contracts]</span>
-              <span className="wg-edge">──(contract_id)──→</span>
-              <span className="wg-node">[frontend]</span>
-              <span className="wg-edge"> │</span>
-              <span className="wg-edge">verifier ↓</span>
-              <span className="wg-edge" />
-              <span className="wg-edge">verifier ↓</span>
-              <span className="wg-end">pass → [kernel: synthesize]</span>
-              <span className="wg-end" />
-              <span className="wg-end">pass →</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="install" ref={installRef}>
-        <div className="container">
-          <span className="section-label">Install</span>
-          <h2 className="section-title">Which one?</h2>
-          <p className="section-sub">Two entry points, one framework. Here&apos;s how to choose.</p>
-          <div className="which-table">
-            {installMatrix.map((row, i) => (
-              <div key={i} className="which-row">
-                <div className="which-cell which-want">{row.want}</div>
-                <div className="which-cell which-use">{row.use}</div>
-              </div>
-            ))}
-          </div>
-          <div className="install-grid">
-            <div className="install-card">
-              <div className="install-card-header">
-                <span className="install-badge">Skill</span>
-                <h3>Agent Orchestration</h3>
-              </div>
-              <div className="install-audience">For Claude Code and OpenCode users</div>
-              <p className="install-desc">Adds 6 AI agents to your sessions. The graph engine activates automatically — describe what you want in natural language.</p>
-              <div className="install-code-block">
-                <div className="install-code-bar">Shell</div>
-                <div className="install-code-body"><span className="cp">$ </span><span className="ccmd">npx skills add rylsherdamz-rgb/stellar-forge</span><br /><br /><span className="co"># or specify your agent</span><br /><span className="cp">$ </span><span className="ccmd">npx skills add ... --agent claude-code</span><br /><span className="cp">$ </span><span className="ccmd">npx skills add ... --agent opencode</span></div>
-              </div>
-              <div className="install-hint">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                <span>Drops into any existing repo — no project structure required.</span>
-              </div>
-            </div>
-            <div className="install-card">
-              <div className="install-card-header">
-                <span className="install-badge">CLI</span>
-                <h3>Project Scaffold</h3>
-              </div>
-              <div className="install-audience">For standalone projects (no AI required)</div>
-              <p className="install-desc">Generates a production-ready monorepo: contracts, frontend, backend, CI/CD, and agent files. The CLI auto-installs the Skill too.</p>
-              <div className="install-code-block">
-                <div className="install-code-bar">Shell</div>
-                <div className="install-code-body"><span className="cp">$ </span><span className="ccmd">npx create-stellar-agentic my-dapp --yes</span><br /><br /><span className="co">  ✔ Scaffolding Stellar Agentic Framework dApp...</span><br /><span className="co">  ✔ contracts/hello-world/src/lib.rs</span><br /><span className="co">  ✔ contracts/token/src/lib.rs</span><br /><span className="co">  ✔ frontend/src/app/page.tsx</span><br /><span className="co">  ✔ backend/src/index.ts</span><br /><span className="co">  ✔ All 10 skills installed</span></div>
-              </div>
-              <div className="install-hint">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                <span><strong>Killer feature:</strong> opening the generated project in Claude Code auto-activates the full harness — no extra steps.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section id="features" className="section-alt" ref={featuresRef}>
         <div className="container">
           <span className="section-label">Features</span>
-          <h2 className="section-title">Everything you need to ship on Stellar</h2>
-          <p className="section-sub">Six specialist agents, 10 domain skills, 5 eval files, an MCP gateway, and an escrow vault — live on testnet. From contract to deployment in minutes.</p>
+          <h2 className="section-title">Escrow you can verify, payments you can trust</h2>
+          <p className="section-sub">On-chain escrow, GitHub-verified proof of work, wallet-signed approvals, and Stellar settlement — with an advisory AI assistant that never touches funds.</p>
           <div className="card-grid">
             {features.map((f, i) => {
               const Icon = f.icon;
@@ -409,26 +238,37 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="agents" ref={agentsRef}>
+      <section id="contract" ref={contractRef}>
         <div className="container">
-          <span className="section-label">Agent Registry</span>
-          <h2 className="section-title">Six agents with edge context</h2>
-          <p className="section-sub">Each agent is a structured prompt configuration (not a running process). They communicate through a defined graph — data flows along edges, not through the kernel.</p>
-          <div className="agents-grid">
-            {agents.map((a, i) => (
-              <div key={i} className="agent-card">
-                <div className="handle">{a.handle}</div>
-                <div className="role">{a.role}</div>
-                {a.edgeIn && <div className="edge edge-in">← {a.edgeIn}</div>}
-                {a.edgeOut && <div className="edge edge-out">→ {a.edgeOut}</div>}
-                <div className="skills">{a.skills.map((s, j) => <span key={j}>{s}</span>)}</div>
-              </div>
+          <span className="section-label">Live on Testnet</span>
+          <h2 className="section-title">The escrow contract is real</h2>
+          <p className="section-sub">The full bounty state machine runs in a Soroban contract, deployed and initialized on Stellar Testnet. Every reward it releases is an independently verifiable transaction.</p>
+          <div className="contract-panel">
+            <div className="contract-row">
+              <span className="contract-key">Contract ID</span>
+              <code className="contract-val">{CONTRACT_ID}</code>
+              <CopyButton getText={() => CONTRACT_ID} />
+            </div>
+            <div className="contract-row">
+              <span className="contract-key">Admin</span>
+              <code className="contract-val">{ADMIN}</code>
+              <CopyButton getText={() => ADMIN} />
+            </div>
+            <div className="contract-row">
+              <span className="contract-key">Network</span>
+              <code className="contract-val">Stellar Testnet</code>
+              <a className="copy-btn" href={EXPLORER} target="_blank" rel="noreferrer">View on Explorer <ArrowRight size={12} /></a>
+            </div>
+          </div>
+          <div className="contract-fns">
+            {["create_bounty", "claim_bounty", "submit_bounty", "approve_bounty", "release_payment", "cancel_bounty", "refund_bounty"].map((fn) => (
+              <span key={fn} className="contract-fn">{fn}</span>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="usage" className="section-alt" ref={usageRef}>
+      <section id="start" className="section-alt" ref={startRef}>
         <div className="container">
           <span className="section-label">Quick Start</span>
           <h2 className="section-title">Fund, build, and settle in 3 steps</h2>
@@ -473,10 +313,10 @@ export default function Home() {
         <div className="container">
           <div className="links">
             <a href="https://github.com/rylsherdamz-rgb/stellar-forge">GitHub</a>
-            <a href="https://www.npmjs.com/package/create-stellar-agentic">npm</a>
+            <a href={EXPLORER} target="_blank" rel="noreferrer">Explorer</a>
             <a href="https://stellar.org">Stellar</a>
           </div>
-          <p>MIT License &middot; v0.3.0</p>
+          <p>MIT License &middot; Stellar Forge</p>
         </div>
       </footer>
     </>
