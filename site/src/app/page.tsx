@@ -141,7 +141,7 @@ export default function Home() {
           <a href="/" className="logo"><Logomark size={22} /> Stellar <em>Forge</em></a>
           <div className="links">
             {ROUTES.map((r) => <a key={r.label} href={r.href}>{r.label}</a>)}
-            <a href="#start" className="nav-cta">Explore Bounties</a>
+            <a href="/bounties" className="nav-cta">Explore Bounties</a>
             <StarButton />
           </div>
         </div>
@@ -158,8 +158,8 @@ export default function Home() {
             USDC straight to their wallet.
           </p>
           <div className="hero-actions">
-            <a href="#start" className="btn btn-primary"><Search size={16} /> Explore Bounties</a>
-            <a href="#how" className="btn btn-secondary"><Vault size={16} /> How It Works</a>
+            <a href="/bounties" className="btn btn-primary"><Search size={16} /> Explore Bounties</a>
+            <a href="/create" className="btn btn-secondary"><Vault size={16} /> Create a Bounty</a>
           </div>
           <BountyPreview />
           <StatsBar />

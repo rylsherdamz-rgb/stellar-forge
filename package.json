@@ -4,7 +4,6 @@
   "private": true,
   "description": "A Stellar-native developer bounty & escrow marketplace. Fund software work in XLM/USDC held in a Soroban smart contract, released only when a GitHub-verified submission is approved.",
   "workspaces": [
-    "apps/web",
     "packages/github",
     "packages/stellar"
   ],

@@ -39,14 +39,16 @@ jobs:
         run: cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
 
   web:
-    name: Web App Build
+    name: Site Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Build web app
-        run: npm run build -w @stellar-forge/web
+      - name: Install site deps
+        run: npm install
+        working-directory: site
+      - name: Build site
+        run: npm run build
+        working-directory: site
