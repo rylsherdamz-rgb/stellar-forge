@@ -1,0 +1,16 @@
+{
+  "name": "@stellar-forge/stellar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stellar Wallets Kit integration + bounty-escrow contract client for Stellar Forge. Wallet signs; the contract decides.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "peerDependencies": {
+    "@creit.tech/stellar-wallets-kit": ">=1",
+    "@stellar/stellar-sdk": ">=12"
+  },
+  "license": "MIT"
+}
