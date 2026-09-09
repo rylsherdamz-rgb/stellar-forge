@@ -10,32 +10,24 @@ Closes # (issue)
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
-- [ ] Eval or agent update
 
 ## Components Affected
 
-- [ ] CLAUDE.md (kernel)
-- [ ] SKILL.md (orchestration)
-- [ ] Agent: `agents/*.md`
-- [ ] Eval: `evals/*.md`
-- [ ] Template: `templates/*`
-- [ ] Skill: `skills/*/SKILL.md`
-- [ ] CLI: `packages/create-stellar-agentic/*`
-- [ ] MCP: `.mcp.json`
-- [ ] Docs: `README.md`, `references/*`
+- [ ] Contract: `contracts/bounty-escrow/*`
+- [ ] GitHub verification: `packages/github/*`
+- [ ] Wallet / Stellar client: `packages/stellar/*`
+- [ ] Web app: `apps/web/*` or `site/*`
+- [ ] Docs: `README.md`, `SPEC.md`, `SECURITY.md`
 
 ## Verification
 
-- [ ] `npm run validate` passes
-- [ ] All relevant evals pass
-- [ ] SKILL.md frontmatter is valid (name, version, description, tags)
-- [ ] No hardcoded secrets
-- [ ] Backward compatible (unless breaking)
+- [ ] `cargo test --manifest-path contracts/bounty-escrow/Cargo.toml` passes (for contract changes)
+- [ ] `npm test` passes (for package changes)
+- [ ] The frontend never moves funds — only the contract does
+- [ ] No hardcoded secrets or private keys
 
 ## How Has This Been Tested?
 
 Describe the tests you ran.
-
-## Screenshots (if applicable)
 
 ## Additional Context

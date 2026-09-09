@@ -5,40 +5,12 @@ on:
     branches: [master, staging, dev]
   pull_request:
     branches: [master, staging, dev]
-  release:
-    types: [published]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Validate Framework
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Framework validation (skills, agents, evals, CLI packaging)
-        run: node scripts/validate.mjs
-
-  test:
-    name: Node Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Gateway unit tests
-        run: npm test -w forge-gateway
-      - name: Framework suite (x402/mpp skip gracefully without backend env)
-        run: npm test
-
   packages:
     name: Package Tests (github + stellar)
     runs-on: ubuntu-latest
@@ -53,51 +25,6 @@ jobs:
       - name: Stellar wallet + asset tests
         run: node --test
         working-directory: packages/stellar
-
-  cli-smoke:
-    name: CLI Package Smoke Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Pack the CLI tarball
-        working-directory: packages/create-stellar-agentic
-        run: npm pack --pack-destination /tmp
-      - name: Install from tarball (catches missing files[] entries)
-        run: npm install -g /tmp/create-stellar-agentic-*.tgz
-      - name: Scaffold a project from the installed CLI
-        run: |
-          cd "$(mktemp -d)"
-          create-stellar-agentic my-dapp --yes --no-install
-      - name: Assert scaffolded output matches README claims
-        run: |
-          cd "$(mktemp -d)"
-          create-stellar-agentic my-dapp --yes --no-install > /dev/null
-          test -f my-dapp/contracts/token/src/lib.rs || { echo "FAIL: SEP-41 token contract missing"; exit 1; }
-          test -f my-dapp/backend/src/middleware/x402.ts || { echo "FAIL: x402 middleware missing"; exit 1; }
-          test -f my-dapp/frontend/src/hooks/use-stellar-data.ts || { echo "FAIL: useStellarData hook missing"; exit 1; }
-          test -f my-dapp/frontend/src/providers/wallet-provider.tsx || { echo "FAIL: wallet provider missing"; exit 1; }
-          test -f my-dapp/.github/workflows/contracts.yml || { echo "FAIL: CI workflow templates missing"; exit 1; }
-          test -d my-dapp/data/deployments || { echo "FAIL: deploy tracker missing"; exit 1; }
-          echo "Scaffold output verified: contracts, x402 middleware, hooks, workflows, tracker"
-
-  contracts:
-    name: Contract Template Tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        crate: [hello-world, token, vault]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: templates/contracts/${{ matrix.crate }}
-      - name: cargo test (${{ matrix.crate }})
-        working-directory: templates/contracts/${{ matrix.crate }}
-        run: cargo test
 
   bounty-escrow:
     name: Bounty Escrow Contract Tests

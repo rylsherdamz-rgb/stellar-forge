@@ -166,19 +166,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="promo" className="section-alt">
-        <div className="container">
-          <span className="section-label">Promo</span>
-          <h2 className="section-title">Watch it in action</h2>
-          <p className="section-sub">60 seconds of funded bounties, on-chain escrow, and Stellar settlement.</p>
-          <div className="promo-frame">
-            <video controls muted playsInline preload="none" poster="/promo-poster.png">
-              <source src="/promo.mp4" type="video/mp4" />
-            </video>
-          </div>
-        </div>
-      </section>
-
       <section id="why" className="section-alt" ref={whyRef}>
         <div className="container">
           <span className="section-label">Why This Exists</span>

@@ -1,7 +1,0 @@
-node_modules
-out/
-public/voiceover/*.mp3
-.env
-.env.local
-.vercel
-*.log
