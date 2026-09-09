@@ -267,21 +267,19 @@ export default function Home() {
 
       <section id="architecture" ref={archRef}>
         <div className="container">
-          <span className="section-label">Architecture</span>
-          <h2 className="section-title">Org Graph</h2>
-          <p className="section-sub">Six agent nodes, each owning a zone with persistent context and defined edges. Stable structure that persists across sessions.</p>
+          <span className="section-label">How It Works</span>
+          <h2 className="section-title">From funded bounty to settled payment</h2>
+          <p className="section-sub">The reward is escrowed on-chain the moment a bounty is created. A Stellar wallet signs every step, GitHub proves the work, and the Soroban contract releases the funds only on an authorized transition.</p>
           <div className="arch-pipeline">
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">Contracts</div><div className="meta">Rust, WASM, deploy</div></div>
+            <div className="arch-pipe-card"><div className="label">Creator</div><div className="value">Create + Fund</div><div className="meta">reward escrowed on-chain</div></div>
             <div className="arch-pipe-arrow"><ArrowRight size={16} /></div>
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">Frontend</div><div className="meta">Next.js, Wallets Kit</div></div>
+            <div className="arch-pipe-card"><div className="label">Developer</div><div className="value">Claim</div><div className="meta">Stellar Wallets Kit signs</div></div>
             <div className="arch-pipe-arrow"><ArrowRight size={16} /></div>
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">Backend</div><div className="meta">Express, RPC, x402</div></div>
+            <div className="arch-pipe-card"><div className="label">Proof</div><div className="value">GitHub PR</div><div className="meta">repo + author verified</div></div>
             <div className="arch-pipe-arrow"><ArrowRight size={16} /></div>
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">Payments</div><div className="meta">USDC, Channels, MPP</div></div>
+            <div className="arch-pipe-card"><div className="label">Creator</div><div className="value">Approve</div><div className="meta">wallet-signed release</div></div>
             <div className="arch-pipe-arrow"><ArrowRight size={16} /></div>
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">DevOps</div><div className="meta">CI/CD, Docker</div></div>
-            <div className="arch-pipe-arrow"><ArrowRight size={16} /></div>
-            <div className="arch-pipe-card"><div className="label">Zone</div><div className="value">ZK</div><div className="meta">Groth16, Circom</div></div>
+            <div className="arch-pipe-card"><div className="label">Soroban</div><div className="value">Settle</div><div className="meta">XLM / USDC to developer</div></div>
           </div>
         </div>
       </section>
@@ -433,38 +431,38 @@ export default function Home() {
       <section id="usage" className="section-alt" ref={usageRef}>
         <div className="container">
           <span className="section-label">Quick Start</span>
-          <h2 className="section-title">Ship in 3 steps</h2>
-          <p className="section-sub">From empty directory to deployed dApp — the graph engine handles routing, verification, and knowledge graphing.</p>
+          <h2 className="section-title">Fund, build, and settle in 3 steps</h2>
+          <p className="section-sub">Connect a Stellar wallet, post a funded bounty, and let the Soroban contract settle the reward when the work is approved.</p>
           <div className="steps">
             <div className="step">
               <span className="num">01</span>
-              <h4>Install</h4>
-              <p>Pick your entry point — Skill for AI orchestration, CLI for project scaffolding, or both.</p>
+              <h4>Create + Fund</h4>
+              <p>Connect with Stellar Wallets Kit and post a bounty. The reward is deposited into the Soroban escrow on creation — every open bounty is provably funded.</p>
               <div className="step-cmds">
-                <div><span className="step-cmd-prompt">$ </span><span>npx skills add rylsherdamz-rgb/stellar-forge</span></div>
-                <div><span className="step-cmd-prompt">$ </span><span>npx create-stellar-agentic my-dapp --yes</span></div>
+                <div><span className="step-cmd-prompt">$ </span><span>connect wallet · deposit XLM or USDC</span></div>
+                <div><span className="step-cmd-prompt">$ </span><span>create_bounty(reward, deadline, requirements)</span></div>
               </div>
             </div>
             <div className="step">
               <span className="num">02</span>
-              <h4>Describe</h4>
-              <p>Tell the graph engine what to build. It generates a work graph and routes to the right agents.</p>
+              <h4>Claim + Submit</h4>
+              <p>A developer claims the bounty, does the work, and submits a GitHub Pull Request as proof. Forge verifies the PR before the submission is accepted.</p>
               <div className="step-prompt">
-                <span className="step-agent">@stellar-contracts </span>create a SAC-compatible token with mint, burn, and transfer operations
+                <span className="step-agent">PR verified </span>repo + author matched against the claim
               </div>
             </div>
             <div className="step">
               <span className="num">03</span>
-              <h4>Ship</h4>
-              <p>Agents write code, evals verify it, knowledge graph maps the project. Deploy with one command.</p>
+              <h4>Approve + Settle</h4>
+              <p>The creator reviews and approves with a wallet signature. The contract validates the state and releases the reward — a verifiable Stellar transaction.</p>
               <div className="step-evals">
-                <div className="step-eval"><span className="step-eval-icon pass" /><span>Contract compiles to WASM</span></div>
-                <div className="step-eval"><span className="step-eval-icon pass" /><span>Tests pass</span></div>
-                <div className="step-eval"><span className="step-eval-icon pass" /><span>Auth on privileged functions</span></div>
-                <div className="step-eval"><span className="step-eval-icon pass" /><span>TTL on writes</span></div>
-                <div className="step-eval"><span className="step-eval-icon pass" /><span>Frontend wallet connect/disconnect</span></div>
-                <div className="step-eval-summary">6/6 evals passed</div>
-                <div className="step-deploy"><code>/deploy . testnet</code></div>
+                <div className="step-eval"><span className="step-eval-icon pass" /><span>Reward escrowed on creation</span></div>
+                <div className="step-eval"><span className="step-eval-icon pass" /><span>Wallet signs every action</span></div>
+                <div className="step-eval"><span className="step-eval-icon pass" /><span>GitHub PR verified (repo + author)</span></div>
+                <div className="step-eval"><span className="step-eval-icon pass" /><span>Only the creator can approve</span></div>
+                <div className="step-eval"><span className="step-eval-icon pass" /><span>Contract releases the funds</span></div>
+                <div className="step-eval-summary">Settled on Stellar</div>
+                <div className="step-deploy"><code>approve_bounty → reward to developer</code></div>
               </div>
             </div>
           </div>
