@@ -149,9 +149,6 @@ section { padding: 100px 0; position: relative; }
 .section-label::before { content: ''; width: 20px; height: 1.5px; background: var(--accent); }
 .section-title { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 700; margin-bottom: 14px; letter-spacing: -0.02em; line-height: 1.15; }
 .section-sub { color: var(--text-dim); font-size: clamp(0.9rem, 1.4vw, 1.05rem); max-width: 560px; line-height: 1.65; }
-.promo-frame { margin-top: 36px; max-width: 900px; margin-left: auto; margin-right: auto; }
-.promo-frame video { width: 100%; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 24px 80px rgba(0,0,0,.5); background: #000; }
-
 .arch-pipeline {
   display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);

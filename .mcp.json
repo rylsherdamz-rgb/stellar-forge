@@ -27,7 +27,7 @@
       "command": "npx",
       "args": [
         "@modelcontextprotocol/server-filesystem",
-        "/home/richie/Projects/stellar-agentic-framework"
+        "/home/richie/Projects/stellar-forge"
       ]
     },
     "playwright": {

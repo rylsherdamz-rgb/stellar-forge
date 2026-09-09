@@ -1,34 +1,25 @@
 {
   "name": "stellar-forge",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Eval-driven multi-agent coding harness for building production Stellar dApps. 6 specialist agents, structured evals, Stellar Agentic Kit hooks, MCP integrations, and one-command scaffold.",
+  "description": "A Stellar-native developer bounty & escrow marketplace. Fund software work in XLM/USDC held in a Soroban smart contract, released only when a GitHub-verified submission is approved.",
   "workspaces": [
-    "packages/create-stellar-agentic",
-    "packages/forge-gateway",
-    "templates/frontend",
-    "templates/backend",
-    "tests"
+    "packages/github",
+    "packages/stellar"
   ],
   "scripts": {
-    "scaffold": "node scripts/scaffold.mjs",
-    "graphify": "graphify . --no-viz",
-    "test": "node tests/run.mjs",
-    "gateway": "npm run start -w forge-gateway",
-    "gateway:test": "npm test -w forge-gateway",
-    "gateway:check-live": "npm run check-live -w forge-gateway",
-    "lint": "node scripts/validate.mjs",
-    "validate": "node scripts/validate.mjs"
+    "test": "npm test -w @stellar-forge/github && npm test -w @stellar-forge/stellar",
+    "test:contract": "cargo test --manifest-path contracts/bounty-escrow/Cargo.toml"
   },
   "keywords": [
     "stellar",
     "soroban",
-    "agent-skill",
-    "claude-code",
-    "opencode",
+    "bounty",
+    "escrow",
+    "marketplace",
     "smart-contracts",
-    "dapp",
-    "eval-driven"
+    "usdc",
+    "web3"
   ],
   "engines": {
     "node": ">=20"
