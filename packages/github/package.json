@@ -5,6 +5,9 @@
   "description": "GitHub Pull Request verification for Stellar Forge bounty submissions — the on-ramp that ties software work to on-chain escrow release.",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "scripts": {
     "test": "node --test"
   },
