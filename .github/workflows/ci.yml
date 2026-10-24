@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
       - name: GitHub PR verification tests
         run: node --test
         working-directory: packages/github
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
       - name: Install site deps
         run: npm install
         working-directory: site
