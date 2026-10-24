@@ -23,5 +23,11 @@
   ],
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "axios": "^1.20.0",
+    "ws@8": "^8.22.0",
+    "follow-redirects": "^1.16.0",
+    "form-data@4": "^4.0.5"
   }
 }
