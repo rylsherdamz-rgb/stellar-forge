@@ -32,7 +32,32 @@ export const METHODS = Object.freeze({
   SET_ADMIN: "set_admin",
   IS_PAUSED: "is_paused",
   IS_TOKEN_ALLOWED: "is_token_allowed",
+  REJECT: "reject_submission",
+  CLAIM_AFTER_REVIEW: "claim_after_review",
+  SET_FEE: "set_fee",
+  SET_REVIEW_PERIOD: "set_review_period",
+  GET_FEE: "get_fee",
+  REVIEW_PERIOD: "review_period",
+  GET_TERMS: "get_terms",
 });
+
+/** Max platform fee the contract accepts, in basis points (10%). */
+export const MAX_FEE_BPS = 1000;
+
+/**
+ * Mirror of the contract's split_fee: fee rounds down, net + fee === amount.
+ * Use it to show the developer their exact payout before they claim.
+ * @param {bigint|number|string} amount
+ * @param {number} feeBps
+ * @returns {{ net: bigint, fee: bigint }}
+ */
+export function splitFee(amount, feeBps) {
+  const a = BigInt(amount);
+  const bps = BigInt(feeBps);
+  if (bps < 0n || bps > BigInt(MAX_FEE_BPS)) throw new Error("feeBps out of range");
+  const fee = (a * bps) / 10000n;
+  return { net: a - fee, fee };
+}
 
 /**
  * Contract error codes (BountyError in lib.rs). Append-only on-chain ABI.
@@ -59,6 +84,9 @@ export const ERRORS = Object.freeze({
   19: "SelfClaim",
   20: "NotParty",
   21: "NotDisputed",
+  22: "ReviewPending",
+  23: "InvalidFee",
+  24: "InvalidReviewPeriod",
 });
 
 /**
@@ -841,6 +869,68 @@ export class BountyEscrowClient {
 
   async resolveDispute(params) {
     return await this.maybeSign(await this.buildResolveDisputeTx(params), params);
+  }
+
+  /**
+   * Assemble reject_submission (creator; before deadline only).
+   * @param {{ bountyId: number|string|bigint, reasonHash: string|Uint8Array, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
+   */
+  async buildRejectSubmissionTx(params) {
+    const reason = formatBytes32(params.reasonHash);
+    return await this.buildTransaction({
+      method: METHODS.REJECT,
+      args: [BigInt(params.bountyId), reason],
+      argTypes: ["u64", "bytes32"],
+      sourceAddress: params.sourceAddress,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async rejectSubmission(params) {
+    return await this.maybeSign(await this.buildRejectSubmissionTx(params), params);
+  }
+
+  /**
+   * Assemble claim_after_review (developer; after the review window lapses).
+   * @param {{ bountyId: number|string|bigint, developer: string, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
+   */
+  async buildClaimAfterReviewTx(params) {
+    return await this.buildTransaction({
+      method: METHODS.CLAIM_AFTER_REVIEW,
+      args: [BigInt(params.bountyId), params.developer],
+      argTypes: ["u64", "address"],
+      sourceAddress: params.sourceAddress ?? params.developer,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async claimAfterReview(params) {
+    return await this.maybeSign(await this.buildClaimAfterReviewTx(params), params);
+  }
+
+  /**
+   * Per-bounty terms snapshotted at creation.
+   * @param {number|string|bigint} bountyId
+   * @returns {Promise<{ feeBps: number, feeRecipient: string|null, reviewPeriod: number, submittedAt: number, reviewEndsAt: number|null }>}
+   */
+  async getTerms(bountyId) {
+    const raw = await this.callReadView(METHODS.GET_TERMS, [BigInt(bountyId)], ["u64"]);
+    const get = (k) => (raw instanceof Map ? raw.get(k) : raw?.[k]);
+    const feeBps = Number(get("fee_bps") ?? 0);
+    const reviewPeriod = Number(get("review_period") ?? 0);
+    const submittedAt = Number(get("submitted_at") ?? 0);
+    const rec = get("fee_recipient");
+    return {
+      feeBps,
+      feeRecipient: rec ? String(rec) : null,
+      reviewPeriod,
+      submittedAt,
+      reviewEndsAt: submittedAt > 0 ? submittedAt + reviewPeriod : null,
+    };
   }
 
   /** @returns {Promise<boolean>} */

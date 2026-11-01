@@ -169,14 +169,38 @@ export const METHODS: Readonly<{
   SET_ADMIN: "set_admin";
   IS_PAUSED: "is_paused";
   IS_TOKEN_ALLOWED: "is_token_allowed";
+  REJECT: "reject_submission";
+  CLAIM_AFTER_REVIEW: "claim_after_review";
+  SET_FEE: "set_fee";
+  SET_REVIEW_PERIOD: "set_review_period";
+  GET_FEE: "get_fee";
+  REVIEW_PERIOD: "review_period";
+  GET_TERMS: "get_terms";
 }>;
+
+export const MAX_FEE_BPS: 1000;
+
+export function splitFee(
+  amount: bigint | number | string,
+  feeBps: number
+): { net: bigint; fee: bigint };
+
+export interface BountyTerms {
+  feeBps: number;
+  feeRecipient: string | null;
+  reviewPeriod: number;
+  submittedAt: number;
+  /** Ledger at which claim_after_review opens; null until submitted. */
+  reviewEndsAt: number | null;
+}
 
 export type ContractErrorName =
   | "NotInitialized" | "AlreadyInitialized" | "NotAdmin" | "NotCreator"
   | "NotDeveloper" | "NotFound" | "ZeroAmount" | "InvalidDeadline"
   | "BadStatus" | "AlreadyClaimed" | "NotClaimed" | "NotSubmitted"
   | "PastDeadline" | "BeforeDeadline" | "Underfunded" | "Internal"
-  | "Paused" | "TokenNotAllowed" | "SelfClaim" | "NotParty" | "NotDisputed";
+  | "Paused" | "TokenNotAllowed" | "SelfClaim" | "NotParty" | "NotDisputed"
+  | "ReviewPending" | "InvalidFee" | "InvalidReviewPeriod";
 
 export const ERRORS: Readonly<Record<number, ContractErrorName>>;
 
@@ -211,6 +235,16 @@ export interface ExtendDeadlineParams extends TxOptions {
 export interface ResolveDisputeParams extends TxOptions {
   bountyId: number | string | bigint;
   payDeveloper: boolean;
+}
+
+export interface RejectSubmissionParams extends TxOptions {
+  bountyId: number | string | bigint;
+  reasonHash: string | Uint8Array;
+}
+
+export interface ClaimAfterReviewParams extends TxOptions {
+  bountyId: number | string | bigint;
+  developer: string;
 }
 
 type Signed = BuiltTransaction & { signedXdr: string | null };
@@ -317,6 +351,14 @@ export class BountyEscrowClient {
 
   buildResolveDisputeTx(params: ResolveDisputeParams): Promise<BuiltTransaction>;
   resolveDispute(params: ResolveDisputeParams): Promise<Signed>;
+
+  buildRejectSubmissionTx(params: RejectSubmissionParams): Promise<BuiltTransaction>;
+  rejectSubmission(params: RejectSubmissionParams): Promise<Signed>;
+
+  buildClaimAfterReviewTx(params: ClaimAfterReviewParams): Promise<BuiltTransaction>;
+  claimAfterReview(params: ClaimAfterReviewParams): Promise<Signed>;
+
+  getTerms(bountyId: number | string | bigint): Promise<BountyTerms>;
 
   isPaused(): Promise<boolean>;
   isTokenAllowed(token: string): Promise<boolean>;

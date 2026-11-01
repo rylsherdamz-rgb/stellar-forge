@@ -17,6 +17,8 @@ import {
   loadStellarSdk,
   ERRORS,
   decodeContractError,
+  splitFee,
+  MAX_FEE_BPS,
 } from "../src/index.js";
 
 const TEST_CREATOR =
@@ -509,7 +511,7 @@ test("decodeContractError maps host errors to contract error names", () => {
     name: "TokenNotAllowed",
   });
   assert.equal(decodeContractError("network timeout"), null);
-  assert.equal(Object.keys(ERRORS).length, 21);
+  assert.equal(Object.keys(ERRORS).length, 24);
 });
 
 test("isPaused / isTokenAllowed read views", async () => {
@@ -528,4 +530,51 @@ test("isPaused / isTokenAllowed read views", async () => {
     ["is_paused", []],
     ["is_token_allowed", [TEST_TOKEN]],
   ]);
+});
+
+test("v0.3 builders: reject_submission and claim_after_review", async () => {
+  const client = new BountyEscrowClient();
+  const reject = await client.buildRejectSubmissionTx({ bountyId: 8n, reasonHash: VALID_HASH_HEX });
+  assert.equal(reject.method, METHODS.REJECT);
+  assert.equal(reject.args[0], 8n);
+  assert.equal(reject.args[1].length, 32);
+  await assert.rejects(
+    () => client.buildRejectSubmissionTx({ bountyId: 8n, reasonHash: "abc" }),
+    /Invalid hash length/
+  );
+
+  const claim = await client.buildClaimAfterReviewTx({ bountyId: 9n, developer: TEST_DEV });
+  assert.equal(claim.method, METHODS.CLAIM_AFTER_REVIEW);
+  assert.deepEqual(claim.args, [9n, TEST_DEV]);
+});
+
+test("splitFee mirrors the contract (floor, no dust)", () => {
+  assert.deepEqual(splitFee(1001n, 250), { net: 976n, fee: 25n });
+  assert.deepEqual(splitFee(700, 1000), { net: 630n, fee: 70n });
+  assert.deepEqual(splitFee("5", 0), { net: 5n, fee: 0n });
+  for (const amt of [1n, 7n, 999n, 123456789n]) {
+    for (const bps of [0, 1, 250, MAX_FEE_BPS]) {
+      const { net, fee } = splitFee(amt, bps);
+      assert.equal(net + fee, amt);
+    }
+  }
+  assert.throws(() => splitFee(10n, 1001), /out of range/);
+});
+
+test("getTerms decodes snapshot and computes reviewEndsAt", async () => {
+  const client = new BountyEscrowClient({
+    rpc: {
+      async simulate(_id, method) {
+        assert.equal(method, "get_terms");
+        return { fee_bps: 250, fee_recipient: TEST_CREATOR, review_period: 120960, submitted_at: 1000 };
+      },
+    },
+  });
+  assert.deepEqual(await client.getTerms(1n), {
+    feeBps: 250,
+    feeRecipient: TEST_CREATOR,
+    reviewPeriod: 120960,
+    submittedAt: 1000,
+    reviewEndsAt: 121960,
+  });
 });
