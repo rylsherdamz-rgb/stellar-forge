@@ -15,7 +15,10 @@
 //! (after deadline) │ submit (before deadline)
 //!                  ▼
 //!              Submitted ──── approve ───► Completed (developer paid)
-//!                  │ dispute (creator or developer)
+//!               │  │  └── claim_after_review (creator silent) ─► Completed
+//!     reject ◄──┘  │ dispute (creator or developer)
+//!  (→ Claimed,     │
+//!   pre-deadline)  │
 //!                  ▼
 //!              Disputed ── resolve (admin) ─► Completed | Refunded
 //! ```
@@ -30,6 +33,13 @@ use soroban_sdk::{
 const DAY_LEDGERS: u32 = 17280; // ~5s ledgers
 const TTL_THRESHOLD: u32 = DAY_LEDGERS * 7;
 const TTL_EXTEND_TO: u32 = DAY_LEDGERS * 30;
+/// Default creator review window after a submission.
+const DEFAULT_REVIEW_PERIOD: u32 = DAY_LEDGERS * 7;
+const MIN_REVIEW_PERIOD: u32 = DAY_LEDGERS;
+const MAX_REVIEW_PERIOD: u32 = DAY_LEDGERS * 90;
+/// Hard cap on the platform fee: 10%.
+const MAX_FEE_BPS: u32 = 1_000;
+const BPS_DENOMINATOR: i128 = 10_000;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -44,6 +54,31 @@ pub enum DataKey {
     Paused,
     /// Token allowlist entry (SPEC §17: verified assets only).
     AllowedToken(Address),
+    /// Global platform fee config (applies to bounties created afterwards).
+    Fee,
+    /// Global review window in ledgers (applies to bounties created afterwards).
+    ReviewPeriod,
+    /// Per-bounty terms snapshotted at creation. Kept out of `Bounty` so the
+    /// v0.1/v0.2 struct layout (and client decoders) stay unchanged.
+    Terms(u64),
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeConfig {
+    pub fee_bps: u32,
+    pub recipient: Option<Address>,
+}
+
+/// Economic terms fixed when a bounty is created, plus the submit timestamp.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Terms {
+    pub fee_bps: u32,
+    pub fee_recipient: Option<Address>,
+    pub review_period: u32,
+    /// Ledger of the latest submission (0 until submitted).
+    pub submitted_at: u32,
 }
 
 #[contracttype]
@@ -105,6 +140,9 @@ pub enum BountyError {
     SelfClaim = 19,
     NotParty = 20,
     NotDisputed = 21,
+    ReviewPending = 22,
+    InvalidFee = 23,
+    InvalidReviewPeriod = 24,
 }
 
 // ---- events (topics: "bounty", <action>, bounty_id) ----
@@ -151,7 +189,31 @@ pub struct BountyCompleted {
     #[topic]
     pub id: u64,
     pub developer: Address,
+    /// Net amount received by the developer.
     pub amount: i128,
+    /// Platform fee withheld (0 when no fee).
+    pub fee: i128,
+}
+
+#[contractevent(topics = ["bounty", "rejected"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SubmissionRejected {
+    #[topic]
+    pub id: u64,
+    pub reason_hash: BytesN<32>,
+}
+
+#[contractevent(topics = ["admin", "fee"], data_format = "vec")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeChanged {
+    pub fee_bps: u32,
+    pub recipient: Option<Address>,
+}
+
+#[contractevent(topics = ["admin", "review"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ReviewPeriodChanged {
+    pub ledgers: u32,
 }
 
 #[contractevent(topics = ["bounty", "cancelled"], data_format = "single-value")]
@@ -273,6 +335,32 @@ impl BountyEscrow {
         Ok(())
     }
 
+    /// Configure the platform fee on developer payouts. Only bounties created
+    /// after this call are affected (terms are snapshotted at creation).
+    pub fn set_fee(env: Env, fee_bps: u32, recipient: Option<Address>) -> Result<(), BountyError> {
+        require_admin(&env)?;
+        if fee_bps > MAX_FEE_BPS || (fee_bps > 0 && recipient.is_none()) {
+            return Err(BountyError::InvalidFee);
+        }
+        let cfg = FeeConfig { fee_bps, recipient: recipient.clone() };
+        env.storage().instance().set(&DataKey::Fee, &cfg);
+        bump_instance(&env);
+        FeeChanged { fee_bps, recipient }.publish(&env);
+        Ok(())
+    }
+
+    /// Configure the creator review window for future bounties.
+    pub fn set_review_period(env: Env, ledgers: u32) -> Result<(), BountyError> {
+        require_admin(&env)?;
+        if !(MIN_REVIEW_PERIOD..=MAX_REVIEW_PERIOD).contains(&ledgers) {
+            return Err(BountyError::InvalidReviewPeriod);
+        }
+        env.storage().instance().set(&DataKey::ReviewPeriod, &ledgers);
+        bump_instance(&env);
+        ReviewPeriodChanged { ledgers }.publish(&env);
+        Ok(())
+    }
+
     /// Settle a disputed bounty: pay the developer, or refund the creator.
     pub fn resolve_dispute(env: Env, bounty_id: u64, pay_developer: bool) -> Result<(), BountyError> {
         require_admin(&env)?;
@@ -281,11 +369,7 @@ impl BountyEscrow {
             return Err(BountyError::NotDisputed);
         }
         if pay_developer {
-            let developer = b.developer.clone().ok_or(BountyError::NotDeveloper)?;
-            pay(&env, &b.token, &developer, b.amount)?;
-            b.status = Status::Completed;
-            write_bounty(&env, &b);
-            BountyCompleted { id: bounty_id, developer, amount: b.amount }.publish(&env);
+            complete(&env, &mut b)?;
         } else {
             pay(&env, &b.token, &b.creator, b.amount)?;
             b.status = Status::Refunded;
@@ -335,6 +419,22 @@ impl BountyEscrow {
             submission_hash: None,
         };
         write_bounty(&env, &bounty);
+        let fee: FeeConfig = env
+            .storage()
+            .instance()
+            .get(&DataKey::Fee)
+            .unwrap_or(FeeConfig { fee_bps: 0, recipient: None });
+        let terms = Terms {
+            fee_bps: fee.fee_bps,
+            fee_recipient: fee.recipient,
+            review_period: env
+                .storage()
+                .instance()
+                .get(&DataKey::ReviewPeriod)
+                .unwrap_or(DEFAULT_REVIEW_PERIOD),
+            submitted_at: 0,
+        };
+        write_terms(&env, id, &terms);
         env.storage().instance().set(&DataKey::NextId, &(id + 1));
         bump_instance(&env);
         BountyCreated { id, creator, token, amount, deadline }.publish(&env);
@@ -397,6 +497,9 @@ impl BountyEscrow {
         b.submission_hash = Some(submission_hash.clone());
         b.status = Status::Submitted;
         write_bounty(&env, &b);
+        let mut terms = read_terms(&env, bounty_id);
+        terms.submitted_at = env.ledger().sequence();
+        write_terms(&env, bounty_id, &terms);
         BountySubmitted { id: bounty_id, developer, submission_hash }.publish(&env);
         Ok(())
     }
@@ -409,12 +512,47 @@ impl BountyEscrow {
         if b.status != Status::Submitted {
             return Err(BountyError::NotSubmitted);
         }
-        let developer = b.developer.clone().ok_or(BountyError::NotDeveloper)?;
-        pay(&env, &b.token, &developer, b.amount)?;
-        b.status = Status::Completed;
+        complete(&env, &mut b)
+    }
+
+    /// Creator sends a submission back for revision (`Submitted → Claimed`).
+    /// Only before the deadline, so the developer always has time to resubmit;
+    /// after the deadline the creator must approve or dispute.
+    pub fn reject_submission(
+        env: Env,
+        bounty_id: u64,
+        reason_hash: BytesN<32>,
+    ) -> Result<(), BountyError> {
+        let mut b = read_bounty(&env, bounty_id)?;
+        b.creator.require_auth();
+        if b.status != Status::Submitted {
+            return Err(BountyError::NotSubmitted);
+        }
+        if b.deadline <= env.ledger().sequence() {
+            return Err(BountyError::PastDeadline);
+        }
+        b.status = Status::Claimed;
+        b.submission_hash = None;
         write_bounty(&env, &b);
-        BountyCompleted { id: bounty_id, developer, amount: b.amount }.publish(&env);
+        SubmissionRejected { id: bounty_id, reason_hash }.publish(&env);
         Ok(())
+    }
+
+    /// Developer collects the reward when the creator let the review window
+    /// lapse without approving, rejecting, or disputing.
+    pub fn claim_after_review(env: Env, bounty_id: u64, developer: Address) -> Result<(), BountyError> {
+        developer.require_auth();
+        let mut b = read_bounty(&env, bounty_id)?;
+        if b.status != Status::Submitted {
+            return Err(BountyError::NotSubmitted);
+        }
+        require_developer(&b, &developer)?;
+        let terms = read_terms(&env, bounty_id);
+        let opens_at = terms.submitted_at.saturating_add(terms.review_period);
+        if env.ledger().sequence() < opens_at {
+            return Err(BountyError::ReviewPending);
+        }
+        complete(&env, &mut b)
     }
 
     /// Alias of `approve_bounty`, kept for client compatibility.
@@ -512,6 +650,25 @@ impl BountyEscrow {
     pub fn is_token_allowed(env: Env, token: Address) -> bool {
         is_allowed(&env, &token)
     }
+
+    pub fn get_fee(env: Env) -> FeeConfig {
+        env.storage()
+            .instance()
+            .get(&DataKey::Fee)
+            .unwrap_or(FeeConfig { fee_bps: 0, recipient: None })
+    }
+
+    pub fn review_period(env: Env) -> u32 {
+        env.storage()
+            .instance()
+            .get(&DataKey::ReviewPeriod)
+            .unwrap_or(DEFAULT_REVIEW_PERIOD)
+    }
+
+    pub fn get_terms(env: Env, bounty_id: u64) -> Result<Terms, BountyError> {
+        read_bounty(&env, bounty_id)?;
+        Ok(read_terms(&env, bounty_id))
+    }
 }
 
 // ---- internals ----
@@ -572,6 +729,55 @@ fn write_bounty(env: &Env, b: &Bounty) {
     env.storage()
         .persistent()
         .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+    let terms_key = DataKey::Terms(b.id);
+    if env.storage().persistent().has(&terms_key) {
+        env.storage()
+            .persistent()
+            .extend_ttl(&terms_key, TTL_THRESHOLD, TTL_EXTEND_TO);
+    }
+}
+
+fn read_terms(env: &Env, id: u64) -> Terms {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Terms(id))
+        .unwrap_or(Terms {
+            fee_bps: 0,
+            fee_recipient: None,
+            review_period: DEFAULT_REVIEW_PERIOD,
+            submitted_at: 0,
+        })
+}
+
+fn write_terms(env: &Env, id: u64, t: &Terms) {
+    let key = DataKey::Terms(id);
+    env.storage().persistent().set(&key, t);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+}
+
+/// Split `amount` into (developer_net, fee). Fee rounds down so the developer
+/// never receives less than `amount - amount*bps/10000`; net + fee == amount.
+pub fn split_fee(amount: i128, fee_bps: u32) -> (i128, i128) {
+    let fee = amount * fee_bps as i128 / BPS_DENOMINATOR;
+    (amount - fee, fee)
+}
+
+/// Pay the developer (minus the snapshotted fee) and mark the bounty Completed.
+fn complete(env: &Env, b: &mut Bounty) -> Result<(), BountyError> {
+    let developer = b.developer.clone().ok_or(BountyError::NotDeveloper)?;
+    let terms = read_terms(env, b.id);
+    let (net, fee) = split_fee(b.amount, terms.fee_bps);
+    if fee > 0 {
+        let recipient = terms.fee_recipient.ok_or(BountyError::Internal)?;
+        pay(env, &b.token, &recipient, fee)?;
+    }
+    pay(env, &b.token, &developer, net)?;
+    b.status = Status::Completed;
+    write_bounty(env, b);
+    BountyCompleted { id: b.id, developer, amount: net, fee }.publish(env);
+    Ok(())
 }
 
 fn pay(env: &Env, token: &Address, to: &Address, amount: i128) -> Result<(), BountyError> {

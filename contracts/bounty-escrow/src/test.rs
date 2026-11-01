@@ -498,8 +498,197 @@ fn approve_emits_completed_event() {
     let s = setup();
     let id = submitted(&s);
     s.client.approve_bounty(&id);
-    let expected = BountyCompleted { id, developer: s.developer.clone(), amount: 700 };
+    let expected = BountyCompleted { id, developer: s.developer.clone(), amount: 700, fee: 0 };
     let all = s.env.events().all();
     let ours = all.filter_by_contract(&s.client.address);
     assert_eq!(ours.events().last().unwrap(), &expected.to_xdr(&s.env, &s.client.address));
+}
+
+// ---- #34: reject + resubmit ----
+
+#[test]
+fn reject_then_resubmit_then_approve() {
+    let s = setup();
+    let id = submitted(&s);
+    let reason = BytesN::from_array(&s.env, &[3u8; 32]);
+    s.client.reject_submission(&id, &reason);
+    let b = s.client.get_bounty(&id);
+    assert_eq!(b.status, Status::Claimed);
+    assert_eq!(b.submission_hash, None);
+    assert_eq!(b.developer, Some(s.developer.clone()));
+
+    s.client.submit_bounty(&id, &s.developer, &sub(&s.env));
+    s.client.approve_bounty(&id);
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 700);
+}
+
+#[test]
+fn reject_emits_reason_hash() {
+    let s = setup();
+    let id = submitted(&s);
+    let reason = BytesN::from_array(&s.env, &[3u8; 32]);
+    s.client.reject_submission(&id, &reason);
+    let expected = SubmissionRejected { id, reason_hash: reason };
+    let all = s.env.events().all();
+    let ours = all.filter_by_contract(&s.client.address);
+    assert_eq!(ours.events().last().unwrap(), &expected.to_xdr(&s.env, &s.client.address));
+}
+
+#[test]
+fn reject_after_deadline_rejected() {
+    let s = setup();
+    let id = submitted(&s);
+    s.env.ledger().set_sequence_number(5000);
+    assert_eq!(
+        s.client.try_reject_submission(&id, &sub(&s.env)),
+        Err(Ok(BountyError::PastDeadline))
+    );
+}
+
+// ---- #35: review window ----
+
+#[test]
+fn developer_paid_after_review_window_lapses() {
+    let s = setup();
+    let id = submitted(&s); // submitted at ledger 1000
+    let terms = s.client.get_terms(&id);
+    assert_eq!(terms.submitted_at, 1000);
+    assert_eq!(terms.review_period, DAY_LEDGERS * 7);
+
+    s.env.ledger().set_sequence_number(1000 + DAY_LEDGERS * 7 - 1);
+    assert_eq!(
+        s.client.try_claim_after_review(&id, &s.developer),
+        Err(Ok(BountyError::ReviewPending))
+    );
+
+    s.env.ledger().set_sequence_number(1000 + DAY_LEDGERS * 7);
+    s.client.claim_after_review(&id, &s.developer);
+    assert_eq!(s.client.get_bounty(&id).status, Status::Completed);
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 700);
+}
+
+#[test]
+fn dispute_inside_window_blocks_review_claim() {
+    let s = setup();
+    let id = submitted(&s);
+    s.client.dispute_bounty(&id, &s.creator);
+    s.env.ledger().set_sequence_number(1000 + DAY_LEDGERS * 30);
+    assert_eq!(
+        s.client.try_claim_after_review(&id, &s.developer),
+        Err(Ok(BountyError::NotSubmitted))
+    );
+}
+
+#[test]
+fn only_claimer_can_claim_after_review() {
+    let s = setup();
+    let id = submitted(&s);
+    s.env.ledger().set_sequence_number(1000 + DAY_LEDGERS * 7);
+    let other = Address::generate(&s.env);
+    assert_eq!(
+        s.client.try_claim_after_review(&id, &other),
+        Err(Ok(BountyError::NotDeveloper))
+    );
+}
+
+#[test]
+fn review_period_is_bounded_and_snapshotted() {
+    let s = setup();
+    let early = s.client.create_bounty(&s.creator, &s.token, &10, &5000, &meta(&s.env));
+    assert_eq!(
+        s.client.try_set_review_period(&10),
+        Err(Ok(BountyError::InvalidReviewPeriod))
+    );
+    assert_eq!(
+        s.client.try_set_review_period(&(DAY_LEDGERS * 91)),
+        Err(Ok(BountyError::InvalidReviewPeriod))
+    );
+    s.client.set_review_period(&DAY_LEDGERS);
+    assert_eq!(s.client.review_period(), DAY_LEDGERS);
+    let late = s.client.create_bounty(&s.creator, &s.token, &10, &5000, &meta(&s.env));
+    assert_eq!(s.client.get_terms(&early).review_period, DAY_LEDGERS * 7);
+    assert_eq!(s.client.get_terms(&late).review_period, DAY_LEDGERS);
+}
+
+// ---- #36: platform fee ----
+
+#[test]
+fn fee_split_is_exact_and_snapshotted() {
+    let s = setup();
+    let treasury = Address::generate(&s.env);
+    let before = s.client.create_bounty(&s.creator, &s.token, &1_000, &5000, &meta(&s.env));
+
+    s.client.set_fee(&250, &Some(treasury.clone())); // 2.5%
+    assert_eq!(s.client.get_fee().fee_bps, 250);
+    let after = s.client.create_bounty(&s.creator, &s.token, &1_001, &5000, &meta(&s.env));
+
+    // pre-fee bounty pays in full
+    s.client.claim_bounty(&before, &s.developer);
+    s.client.submit_bounty(&before, &s.developer, &sub(&s.env));
+    s.client.approve_bounty(&before);
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 1_000);
+    assert_eq!(balance(&s.env, &s.token, &treasury), 0);
+
+    // post-fee bounty: fee rounds down, nothing lost
+    s.client.claim_bounty(&after, &s.developer);
+    s.client.submit_bounty(&after, &s.developer, &sub(&s.env));
+    s.client.approve_bounty(&after);
+    // events() reflects the last invocation, so check before any balance reads.
+    let expected = BountyCompleted { id: after, developer: s.developer.clone(), amount: 976, fee: 25 };
+    let all = s.env.events().all();
+    let ours = all.filter_by_contract(&s.client.address);
+    assert_eq!(ours.events().last().unwrap(), &expected.to_xdr(&s.env, &s.client.address));
+    assert_eq!(balance(&s.env, &s.token, &treasury), 25); // floor(1001*0.025)
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 1_000 + 976);
+    assert_eq!(balance(&s.env, &s.token, &s.client.address), 0);
+
+}
+
+#[test]
+fn fee_never_applies_to_refunds() {
+    let s = setup();
+    let treasury = Address::generate(&s.env);
+    s.client.set_fee(&1_000, &Some(treasury.clone()));
+    let id = s.client.create_bounty(&s.creator, &s.token, &500, &5000, &meta(&s.env));
+    s.client.cancel_bounty(&id);
+    assert_eq!(balance(&s.env, &s.token, &s.creator), 1_000_000);
+    assert_eq!(balance(&s.env, &s.token, &treasury), 0);
+}
+
+#[test]
+fn fee_applies_when_dispute_pays_developer() {
+    let s = setup();
+    let treasury = Address::generate(&s.env);
+    s.client.set_fee(&1_000, &Some(treasury.clone()));
+    let id = submitted(&s);
+    s.client.dispute_bounty(&id, &s.developer);
+    s.client.resolve_dispute(&id, &true);
+    assert_eq!(balance(&s.env, &s.token, &treasury), 70);
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 630);
+}
+
+#[test]
+fn invalid_fee_configs_rejected() {
+    let s = setup();
+    let treasury = Address::generate(&s.env);
+    assert_eq!(
+        s.client.try_set_fee(&1_001, &Some(treasury)),
+        Err(Ok(BountyError::InvalidFee))
+    );
+    assert_eq!(
+        s.client.try_set_fee(&100, &None),
+        Err(Ok(BountyError::InvalidFee))
+    );
+    s.client.set_fee(&0, &None); // disabling is fine
+}
+
+#[test]
+fn split_fee_never_loses_dust() {
+    for amount in [1i128, 7, 999, 10_001, 123_456_789] {
+        for bps in [0u32, 1, 250, 999, 1_000] {
+            let (net, fee) = split_fee(amount, bps);
+            assert_eq!(net + fee, amount);
+            assert!(fee >= 0 && net >= 0);
+        }
+    }
 }
