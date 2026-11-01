@@ -15,6 +15,8 @@ import {
   parseBounty,
   ForgeWallet,
   loadStellarSdk,
+  ERRORS,
+  decodeContractError,
 } from "../src/index.js";
 
 const TEST_CREATOR =
@@ -27,9 +29,17 @@ const VALID_HASH_HEX =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 function getFunctionName(invoke) {
-  if (!invoke || !invoke.functionName) return "";
-  const bytes = invoke.functionName.bytes ?? invoke.functionName;
-  return Buffer.from(bytes).toString("utf8");
+  return invoke?.functionName ?? "";
+}
+
+// stellar-sdk exposes XDR unions as accessor methods (func.invokeContract(),
+// args.functionName()), not plain properties. Normalize to a plain shape.
+function decodeInvoke(op) {
+  const func = op.func;
+  const ic = typeof func.invokeContract === "function" ? func.invokeContract() : func.invokeContract;
+  const name = typeof ic.functionName === "function" ? ic.functionName() : ic.functionName;
+  const args = typeof ic.args === "function" ? ic.args() : ic.args;
+  return { functionName: Buffer.from(name).toString("utf8"), args };
 }
 
 test("BountyEscrowClient initializes with default testnet configurations", () => {
@@ -208,7 +218,7 @@ test("buildCreateBountyTx assembles valid create_bounty transaction", async () =
     assert.equal(tx.operations.length, 1);
     const op = tx.operations[0];
     assert.equal(op.type, "invokeHostFunction");
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "create_bounty");
     assert.equal(invoke.args.length, 5);
     assert.equal(sdk.scValToNative(invoke.args[0]), TEST_CREATOR);
@@ -240,7 +250,7 @@ test("buildClaimBountyTx assembles valid claim_bounty transaction", async () => 
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "claim_bounty");
     assert.equal(invoke.args.length, 2);
     assert.equal(sdk.scValToNative(invoke.args[0]), 42n);
@@ -268,7 +278,7 @@ test("buildSubmitBountyTx assembles valid submit_bounty transaction", async () =
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "submit_bounty");
     assert.equal(invoke.args.length, 3);
     assert.equal(sdk.scValToNative(invoke.args[0]), 7n);
@@ -296,7 +306,7 @@ test("buildApproveBountyTx assembles valid approve_bounty transaction", async ()
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "approve_bounty");
     assert.equal(invoke.args.length, 1);
     assert.equal(sdk.scValToNative(invoke.args[0]), 99n);
@@ -319,7 +329,7 @@ test("buildReleasePaymentTx assembles valid release_payment transaction", async 
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "release_payment");
     assert.equal(invoke.args.length, 1);
     assert.equal(sdk.scValToNative(invoke.args[0]), 101n);
@@ -342,7 +352,7 @@ test("buildCancelBountyTx assembles valid cancel_bounty transaction", async () =
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "cancel_bounty");
     assert.equal(invoke.args.length, 1);
     assert.equal(sdk.scValToNative(invoke.args[0]), 55n);
@@ -365,7 +375,7 @@ test("buildRefundBountyTx assembles valid refund_bounty transaction", async () =
   if (sdk && built.xdr) {
     const tx = sdk.TransactionBuilder.fromXDR(built.xdr, TESTNET_PASSPHRASE);
     const op = tx.operations[0];
-    const invoke = op.func.invokeContract;
+    const invoke = decodeInvoke(op);
     assert.equal(getFunctionName(invoke), "refund_bounty");
     assert.equal(invoke.args.length, 1);
     assert.equal(sdk.scValToNative(invoke.args[0]), 88n);
@@ -459,4 +469,63 @@ test("read views query RPC simulation and decode responses", async () => {
 
   const admin = await client.admin();
   assert.equal(admin, TEST_CREATOR);
+});
+
+test("v0.2 lifecycle builders target the right methods and args", async () => {
+  const client = new BountyEscrowClient();
+
+  const unclaim = await client.buildUnclaimBountyTx({ bountyId: 3n, developer: TEST_DEV });
+  assert.equal(unclaim.method, METHODS.UNCLAIM);
+  assert.deepEqual(unclaim.args, [3n, TEST_DEV]);
+
+  const dispute = await client.buildDisputeBountyTx({ bountyId: 4n, caller: TEST_CREATOR });
+  assert.equal(dispute.method, METHODS.DISPUTE);
+  assert.deepEqual(dispute.args, [4n, TEST_CREATOR]);
+
+  const extend = await client.buildExtendDeadlineTx({ bountyId: 5n, newDeadline: 9000 });
+  assert.equal(extend.method, METHODS.EXTEND_DEADLINE);
+  assert.deepEqual(extend.args, [5n, 9000]);
+  await assert.rejects(
+    () => client.buildExtendDeadlineTx({ bountyId: 5n, newDeadline: -1 }),
+    /positive ledger sequence/
+  );
+
+  const resolve = await client.buildResolveDisputeTx({ bountyId: 6n, payDeveloper: false });
+  assert.equal(resolve.method, METHODS.RESOLVE_DISPUTE);
+  assert.deepEqual(resolve.args, [6n, false]);
+  await assert.rejects(
+    () => client.buildResolveDisputeTx({ bountyId: 6n }),
+    /explicit boolean/
+  );
+});
+
+test("decodeContractError maps host errors to contract error names", () => {
+  assert.deepEqual(decodeContractError("HostError: Error(Contract, #13)"), {
+    code: 13,
+    name: "PastDeadline",
+  });
+  assert.deepEqual(decodeContractError(new Error("Error(Contract, #18)")), {
+    code: 18,
+    name: "TokenNotAllowed",
+  });
+  assert.equal(decodeContractError("network timeout"), null);
+  assert.equal(Object.keys(ERRORS).length, 21);
+});
+
+test("isPaused / isTokenAllowed read views", async () => {
+  const calls = [];
+  const client = new BountyEscrowClient({
+    rpc: {
+      async simulate(_id, method, args) {
+        calls.push([method, args]);
+        return method === "is_paused" ? false : true;
+      },
+    },
+  });
+  assert.equal(await client.isPaused(), false);
+  assert.equal(await client.isTokenAllowed(TEST_TOKEN), true);
+  assert.deepEqual(calls, [
+    ["is_paused", []],
+    ["is_token_allowed", [TEST_TOKEN]],
+  ]);
 });

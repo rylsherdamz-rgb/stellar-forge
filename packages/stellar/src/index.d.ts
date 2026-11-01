@@ -159,7 +159,61 @@ export const METHODS: Readonly<{
   NEXT_ID: "next_id";
   ADMIN: "admin";
   INITIALIZE: "initialize";
+  UNCLAIM: "unclaim_bounty";
+  DISPUTE: "dispute_bounty";
+  EXTEND_DEADLINE: "extend_deadline";
+  RESOLVE_DISPUTE: "resolve_dispute";
+  PAUSE: "pause";
+  UNPAUSE: "unpause";
+  SET_TOKEN_ALLOWED: "set_token_allowed";
+  SET_ADMIN: "set_admin";
+  IS_PAUSED: "is_paused";
+  IS_TOKEN_ALLOWED: "is_token_allowed";
 }>;
+
+export type ContractErrorName =
+  | "NotInitialized" | "AlreadyInitialized" | "NotAdmin" | "NotCreator"
+  | "NotDeveloper" | "NotFound" | "ZeroAmount" | "InvalidDeadline"
+  | "BadStatus" | "AlreadyClaimed" | "NotClaimed" | "NotSubmitted"
+  | "PastDeadline" | "BeforeDeadline" | "Underfunded" | "Internal"
+  | "Paused" | "TokenNotAllowed" | "SelfClaim" | "NotParty" | "NotDisputed";
+
+export const ERRORS: Readonly<Record<number, ContractErrorName>>;
+
+export function decodeContractError(
+  err: unknown
+): { code: number; name: ContractErrorName | "Unknown" } | null;
+
+interface TxOptions {
+  sourceAddress?: string;
+  sequence?: string | number | bigint;
+  fee?: string | number;
+  timeout?: number;
+  sign?: boolean;
+}
+
+export interface UnclaimBountyParams extends TxOptions {
+  bountyId: number | string | bigint;
+  developer: string;
+}
+
+export interface DisputeBountyParams extends TxOptions {
+  bountyId: number | string | bigint;
+  /** Creator or claiming developer. */
+  caller: string;
+}
+
+export interface ExtendDeadlineParams extends TxOptions {
+  bountyId: number | string | bigint;
+  newDeadline: number;
+}
+
+export interface ResolveDisputeParams extends TxOptions {
+  bountyId: number | string | bigint;
+  payDeveloper: boolean;
+}
+
+type Signed = BuiltTransaction & { signedXdr: string | null };
 
 export const STATUS: readonly Status[];
 
@@ -249,6 +303,23 @@ export class BountyEscrowClient {
   refundBounty(
     params: RefundBountyParams
   ): Promise<BuiltTransaction & { signedXdr: string | null }>;
+
+  maybeSign(built: BuiltTransaction, params?: { sign?: boolean }): Promise<Signed>;
+
+  buildUnclaimBountyTx(params: UnclaimBountyParams): Promise<BuiltTransaction>;
+  unclaimBounty(params: UnclaimBountyParams): Promise<Signed>;
+
+  buildDisputeBountyTx(params: DisputeBountyParams): Promise<BuiltTransaction>;
+  disputeBounty(params: DisputeBountyParams): Promise<Signed>;
+
+  buildExtendDeadlineTx(params: ExtendDeadlineParams): Promise<BuiltTransaction>;
+  extendDeadline(params: ExtendDeadlineParams): Promise<Signed>;
+
+  buildResolveDisputeTx(params: ResolveDisputeParams): Promise<BuiltTransaction>;
+  resolveDispute(params: ResolveDisputeParams): Promise<Signed>;
+
+  isPaused(): Promise<boolean>;
+  isTokenAllowed(token: string): Promise<boolean>;
 
   callReadView(
     method: string,

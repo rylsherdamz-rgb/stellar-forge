@@ -22,7 +22,58 @@ export const METHODS = Object.freeze({
   NEXT_ID: "next_id",
   ADMIN: "admin",
   INITIALIZE: "initialize",
+  UNCLAIM: "unclaim_bounty",
+  DISPUTE: "dispute_bounty",
+  EXTEND_DEADLINE: "extend_deadline",
+  RESOLVE_DISPUTE: "resolve_dispute",
+  PAUSE: "pause",
+  UNPAUSE: "unpause",
+  SET_TOKEN_ALLOWED: "set_token_allowed",
+  SET_ADMIN: "set_admin",
+  IS_PAUSED: "is_paused",
+  IS_TOKEN_ALLOWED: "is_token_allowed",
 });
+
+/**
+ * Contract error codes (BountyError in lib.rs). Append-only on-chain ABI.
+ */
+export const ERRORS = Object.freeze({
+  1: "NotInitialized",
+  2: "AlreadyInitialized",
+  3: "NotAdmin",
+  4: "NotCreator",
+  5: "NotDeveloper",
+  6: "NotFound",
+  7: "ZeroAmount",
+  8: "InvalidDeadline",
+  9: "BadStatus",
+  10: "AlreadyClaimed",
+  11: "NotClaimed",
+  12: "NotSubmitted",
+  13: "PastDeadline",
+  14: "BeforeDeadline",
+  15: "Underfunded",
+  16: "Internal",
+  17: "Paused",
+  18: "TokenNotAllowed",
+  19: "SelfClaim",
+  20: "NotParty",
+  21: "NotDisputed",
+});
+
+/**
+ * Extract a named contract error from a simulation/host error message such as
+ * "HostError: Error(Contract, #13)". Returns null when no contract code is present.
+ * @param {unknown} err
+ * @returns {{ code: number, name: string } | null}
+ */
+export function decodeContractError(err) {
+  const msg = typeof err === "string" ? err : err?.message ?? String(err ?? "");
+  const m = /Error\(Contract, #(\d+)\)/.exec(msg);
+  if (!m) return null;
+  const code = Number(m[1]);
+  return { code, name: ERRORS[code] ?? "Unknown" };
+}
 
 /**
  * On-chain status enum, matching the contract's Status.
@@ -232,6 +283,8 @@ function encodeScVal(sdk, val, type) {
       return sdk.nativeToScVal(BigInt(val), { type: "i128" });
     case "u32":
       return sdk.nativeToScVal(Number(val), { type: "u32" });
+    case "bool":
+      return sdk.nativeToScVal(Boolean(val), { type: "bool" });
     case "bytes32":
     case "bytes":
       return sdk.nativeToScVal(formatBytes32(val), { type: "bytes" });
@@ -500,15 +553,7 @@ export class BountyEscrowClient {
    */
   async createBounty(params) {
     const built = await this.buildCreateBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -541,15 +586,7 @@ export class BountyEscrowClient {
    */
   async claimBounty(params) {
     const built = await this.buildClaimBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -584,15 +621,7 @@ export class BountyEscrowClient {
    */
   async submitBounty(params) {
     const built = await this.buildSubmitBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -606,15 +635,7 @@ export class BountyEscrowClient {
    * @returns {Promise<Object>}
    */
   async buildApproveBountyTx(params) {
-    return await this.buildTransaction({
-      method: METHODS.APPROVE,
-      args: [BigInt(params.bountyId)],
-      argTypes: ["u64"],
-      sourceAddress: params.sourceAddress,
-      sequence: params.sequence,
-      fee: params.fee,
-      timeout: params.timeout,
-    });
+    return await this.buildBountyIdTx(METHODS.APPROVE, params);
   }
 
   /**
@@ -624,15 +645,7 @@ export class BountyEscrowClient {
    */
   async approveBounty(params) {
     const built = await this.buildApproveBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -646,15 +659,7 @@ export class BountyEscrowClient {
    * @returns {Promise<Object>}
    */
   async buildReleasePaymentTx(params) {
-    return await this.buildTransaction({
-      method: METHODS.RELEASE,
-      args: [BigInt(params.bountyId)],
-      argTypes: ["u64"],
-      sourceAddress: params.sourceAddress,
-      sequence: params.sequence,
-      fee: params.fee,
-      timeout: params.timeout,
-    });
+    return await this.buildBountyIdTx(METHODS.RELEASE, params);
   }
 
   /**
@@ -664,15 +669,7 @@ export class BountyEscrowClient {
    */
   async releasePayment(params) {
     const built = await this.buildReleasePaymentTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -686,15 +683,7 @@ export class BountyEscrowClient {
    * @returns {Promise<Object>}
    */
   async buildCancelBountyTx(params) {
-    return await this.buildTransaction({
-      method: METHODS.CANCEL,
-      args: [BigInt(params.bountyId)],
-      argTypes: ["u64"],
-      sourceAddress: params.sourceAddress,
-      sequence: params.sequence,
-      fee: params.fee,
-      timeout: params.timeout,
-    });
+    return await this.buildBountyIdTx(METHODS.CANCEL, params);
   }
 
   /**
@@ -704,15 +693,7 @@ export class BountyEscrowClient {
    */
   async cancelBounty(params) {
     const built = await this.buildCancelBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
-    }
-    return { ...built, signedXdr };
+    return await this.maybeSign(built, params);
   }
 
   /**
@@ -726,8 +707,46 @@ export class BountyEscrowClient {
    * @returns {Promise<Object>}
    */
   async buildRefundBountyTx(params) {
+    return await this.buildBountyIdTx(METHODS.REFUND, params);
+  }
+
+  /**
+   * Build and optionally sign refund_bounty transaction.
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  async refundBounty(params) {
+    const built = await this.buildRefundBountyTx(params);
+    return await this.maybeSign(built, params);
+  }
+
+  /**
+   * Sign `built` with the connected wallet unless `params.sign === false`.
+   * @param {Object} built
+   * @param {{ sign?: boolean }} params
+   * @returns {Promise<Object>}
+   */
+  async maybeSign(built, params = {}) {
+    let signedXdr = null;
+    if (
+      params.sign !== false &&
+      (params.sign || this.wallet) &&
+      (built.xdr || built.transaction)
+    ) {
+      signedXdr = await this.signTransaction(built);
+    }
+    return { ...built, signedXdr };
+  }
+
+  /**
+   * Assemble a single-bountyId call (approve/release/cancel/refund).
+   * @param {string} method
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  async buildBountyIdTx(method, params) {
     return await this.buildTransaction({
-      method: METHODS.REFUND,
+      method,
       args: [BigInt(params.bountyId)],
       argTypes: ["u64"],
       sourceAddress: params.sourceAddress,
@@ -738,21 +757,105 @@ export class BountyEscrowClient {
   }
 
   /**
-   * Build and optionally sign refund_bounty transaction.
-   * @param {Object} params
-   * @returns {Promise<Object>}
+   * Assemble unclaim_bounty (developer abandons a claim).
+   * @param {{ bountyId: number|string|bigint, developer: string, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
    */
-  async refundBounty(params) {
-    const built = await this.buildRefundBountyTx(params);
-    let signedXdr = null;
-    if (
-      params.sign !== false &&
-      (params.sign || this.wallet) &&
-      (built.xdr || built.transaction)
-    ) {
-      signedXdr = await this.signTransaction(built);
+  async buildUnclaimBountyTx(params) {
+    return await this.buildTransaction({
+      method: METHODS.UNCLAIM,
+      args: [BigInt(params.bountyId), params.developer],
+      argTypes: ["u64", "address"],
+      sourceAddress: params.sourceAddress ?? params.developer,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async unclaimBounty(params) {
+    return await this.maybeSign(await this.buildUnclaimBountyTx(params), params);
+  }
+
+  /**
+   * Assemble dispute_bounty (creator or developer escalates a submission).
+   * @param {{ bountyId: number|string|bigint, caller: string, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
+   */
+  async buildDisputeBountyTx(params) {
+    return await this.buildTransaction({
+      method: METHODS.DISPUTE,
+      args: [BigInt(params.bountyId), params.caller],
+      argTypes: ["u64", "address"],
+      sourceAddress: params.sourceAddress ?? params.caller,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async disputeBounty(params) {
+    return await this.maybeSign(await this.buildDisputeBountyTx(params), params);
+  }
+
+  /**
+   * Assemble extend_deadline (creator; deadline may only move later).
+   * @param {{ bountyId: number|string|bigint, newDeadline: number, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
+   */
+  async buildExtendDeadlineTx(params) {
+    const newDeadline = Number(params.newDeadline);
+    if (!Number.isInteger(newDeadline) || newDeadline <= 0) {
+      throw new Error("newDeadline must be a positive ledger sequence");
     }
-    return { ...built, signedXdr };
+    return await this.buildTransaction({
+      method: METHODS.EXTEND_DEADLINE,
+      args: [BigInt(params.bountyId), newDeadline],
+      argTypes: ["u64", "u32"],
+      sourceAddress: params.sourceAddress,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async extendDeadline(params) {
+    return await this.maybeSign(await this.buildExtendDeadlineTx(params), params);
+  }
+
+  /**
+   * Assemble resolve_dispute (admin only).
+   * @param {{ bountyId: number|string|bigint, payDeveloper: boolean, sourceAddress?: string, sequence?: any, fee?: any, timeout?: number }} params
+   */
+  async buildResolveDisputeTx(params) {
+    if (typeof params.payDeveloper !== "boolean") {
+      throw new Error("payDeveloper must be an explicit boolean");
+    }
+    return await this.buildTransaction({
+      method: METHODS.RESOLVE_DISPUTE,
+      args: [BigInt(params.bountyId), params.payDeveloper],
+      argTypes: ["u64", "bool"],
+      sourceAddress: params.sourceAddress,
+      sequence: params.sequence,
+      fee: params.fee,
+      timeout: params.timeout,
+    });
+  }
+
+  async resolveDispute(params) {
+    return await this.maybeSign(await this.buildResolveDisputeTx(params), params);
+  }
+
+  /** @returns {Promise<boolean>} */
+  async isPaused() {
+    return Boolean(await this.callReadView(METHODS.IS_PAUSED, [], []));
+  }
+
+  /**
+   * @param {string} token SAC contract address
+   * @returns {Promise<boolean>}
+   */
+  async isTokenAllowed(token) {
+    return Boolean(
+      await this.callReadView(METHODS.IS_TOKEN_ALLOWED, [token], ["address"])
+    );
   }
 
   /**
@@ -792,7 +895,10 @@ export class BountyEscrowClient {
       if (sdk.rpc.Api.isSimulationSuccess(sim)) {
         return sdk.scValToNative(sim.result.retval);
       }
-      throw new Error(`Simulation failed: ${sim.error ?? "unknown error"}`);
+      const decoded = decodeContractError(sim.error);
+      throw new Error(
+        `Simulation failed: ${decoded ? `${decoded.name} (#${decoded.code})` : sim.error ?? "unknown error"}`
+      );
     }
     throw new Error("RPC client or connection required to execute read views");
   }
