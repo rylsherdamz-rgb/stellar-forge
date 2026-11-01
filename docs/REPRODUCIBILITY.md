@@ -15,6 +15,24 @@ environment, validated on Stellar Testnet. It satisfies the Instaward SOW
 
 ## 1. Contract — build, test, deploy
 
+### Option A: Automated Reproducible Deploy Script (Recommended)
+
+Run the automated deployment script to build the release WASM, deploy with a named Stellar CLI identity, initialize the contract, and allowlist the native XLM SAC in one idempotent step:
+
+```bash
+./scripts/deploy-bounty-escrow.sh <identity-name> [testnet|mainnet]
+```
+
+The script verifies:
+1. The named Stellar identity exists in `stellar keys list`.
+2. Compiles release WASM via `stellar contract build`.
+3. Deploys the contract without hardcoded secrets.
+4. Initializes `initialize(admin)`.
+5. Allowlists the native XLM SAC (`set_token_allowed`).
+6. Emits a formatted JSON deployment record for `data/deployments/testnet.json`.
+
+### Option B: Manual Step-by-Step Deployment
+
 ```bash
 # unit tests (17: happy path, auth, double-claim, unauthorized, expiry, zero reward, ...)
 cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
@@ -31,6 +49,10 @@ stellar contract deploy \
 # initialize with an admin
 stellar contract invoke --id <CONTRACT_ID> --source <name> --network testnet \
   -- initialize --admin $(stellar keys address <name>)
+
+# allowlist native XLM SAC on testnet
+stellar contract invoke --id <CONTRACT_ID> --source <name> --network testnet \
+  -- set_token_allowed --token CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC --allowed true
 ```
 
 The reference deployment (already live) is recorded in
