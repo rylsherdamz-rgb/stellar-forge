@@ -90,12 +90,15 @@ Soroban contract that owns the full bounty state machine on-chain.
 | `cancel_bounty(bounty_id)` | creator | Refunds an unclaimed bounty, `Open → Cancelled` |
 | `refund_bounty(bounty_id)` | creator | Refunds an `Open`/`Claimed` bounty after deadline, `→ Refunded` |
 | `extend_deadline(bounty_id, new_deadline)` | creator | Moves the deadline later (never earlier) |
+| `reject_submission(bounty_id, reason_hash)` | creator | `Submitted → Claimed` for a revision (before deadline only) |
+| `claim_after_review(bounty_id, developer)` | claiming developer | Paid if the creator stays silent past the review window |
 | `dispute_bounty(bounty_id, caller)` | creator or developer | `Submitted → Disputed`; funds stay locked |
 | `resolve_dispute(bounty_id, pay_developer)` | admin | `Disputed → Completed` (pay dev) or `→ Refunded` |
 | `pause()` / `unpause()` | admin | Blocks new create/claim; exits always stay open |
 | `set_token_allowed(token, allowed)` | admin | On-chain deposit-asset allowlist (SPEC §17) |
+| `set_fee(fee_bps, recipient)` / `set_review_period(ledgers)` | admin | Fee ≤ 10% on developer payouts; review window 1–90 days. Both snapshotted per bounty at creation |
 | `set_admin(new_admin)` / `upgrade(wasm_hash)` | admin (+ new admin) | Admin rotation, in-place WASM upgrade |
-| `get_bounty(id)` / `next_id()` / `admin()` / `is_paused()` / `is_token_allowed(token)` | anyone | Read-only views |
+| `get_bounty(id)` / `get_terms(id)` / `next_id()` / `admin()` / `is_paused()` / `is_token_allowed(token)` / `get_fee()` / `review_period()` | anyone | Read-only views |
 
 On-chain status: `Open · Claimed · Submitted · Completed · Cancelled · Expired · Disputed · Refunded`.
 
@@ -106,9 +109,11 @@ it is either approved or disputed and settled by the admin, so escrow can't be
 locked forever. The admin can't move funds outside a dispute, and pausing never
 blocks exits. The frontend is never trusted to decide whether money moves.
 
-> **v0.2 note:** the testnet deployment below runs v0.1, which has no `upgrade`
-> entrypoint. v0.2 needs a fresh deploy, then `initialize(admin)` and
-> `set_token_allowed(<native XLM SAC>, true)` before the first `create_bounty`.
+> **v0.3 note:** the testnet deployment below runs v0.1, which has no `upgrade`
+> entrypoint. v0.3 needs a fresh deploy:
+> `STELLAR_DEPLOYER=<identity> ./scripts/deploy-bounty-escrow.sh testnet`
+> (tests → build → deploy → `initialize` → allowlist native XLM). From v0.2 on,
+> later versions upgrade in place via `upgrade(wasm_hash)`.
 
 ### Live on Stellar Testnet
 

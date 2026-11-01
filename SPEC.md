@@ -62,6 +62,11 @@ resolve_dispute(bounty_id, pay_developer)     // v0.2: admin, Disputed -> Comple
 pause() / unpause()                           // v0.2: admin, blocks create/claim only
 set_token_allowed(token, allowed)             // v0.2: admin, verified-asset allowlist
 set_admin(new_admin) / upgrade(wasm_hash)     // v0.2: admin
+reject_submission(bounty_id, reason_hash)     // v0.3: creator, Submitted -> Claimed, pre-deadline
+claim_after_review(bounty_id, developer)      // v0.3: developer, after review window lapses
+set_fee(fee_bps, recipient)                   // v0.3: admin, <= 1000 bps, developer payouts only
+set_review_period(ledgers)                    // v0.3: admin, 1..90 days
+get_terms(bounty_id)                          // v0.3: fee + review window snapshot
 ```
 
 Contract state per bounty:
