@@ -37,6 +37,7 @@ export interface Bounty {
   requirements: string;
   acceptanceCriteria: string;
   githubRepository: string; // owner/repo
+  tech: string[];
   rewardAmount: string; // human XLM amount, e.g. "25"
   asset: "XLM";
   deadlineLedger: number | null;
