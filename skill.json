@@ -108,7 +108,7 @@
       "agentDir": "agents"
     }
   },
-  "requires": ["git", "node >=20", "cargo (for contracts)"],
+  "requires": ["git", "node ^22.23.4 || ^24.22.1 || >=26.12.1", "cargo (for contracts)"],
   "publishConfig": {
     "immutable": false,
     "access": "public"
