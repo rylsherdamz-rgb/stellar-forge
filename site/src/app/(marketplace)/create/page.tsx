@@ -18,6 +18,7 @@ export default function CreatePage() {
     requirements: "",
     acceptanceCriteria: "",
     githubRepository: "",
+    tech: "",
     rewardAmount: "",
     deadlineDays: "7",
   });
@@ -29,20 +30,35 @@ export default function CreatePage() {
     if (!address) { await connect(); return; }
     setBusy(true);
     try {
-      // 1. Create off-chain metadata record.
+      // 1. Read chain state for the deadline.
+      const chainRes = await fetch("/api/chain");
+      const chain = await chainRes.json();
+
+      if (!chainRes.ok) {
+        throw new Error(chain.error || "Failed to read chain state");
+      }
+
+      const deadlineLedger =
+        Number(chain.latestLedger) +
+        Number(form.deadlineDays) * DAY_LEDGERS;
+
+      // 2. Create off-chain metadata record.
       const createRes = await fetch("/api/bounties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, creator: address }),
+        body: JSON.stringify({
+          ...form,
+          tech: form.tech
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+          deadlineLedger,
+          creator: address,
+        }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error);
       const bountyId = createData.bounty.id as string;
-
-      // 2. Read chain: next escrow id + current ledger for the deadline.
-      const chain = await (await fetch("/api/chain")).json();
-      const deadlineLedger =
-        Number(chain.latestLedger) + Number(form.deadlineDays) * DAY_LEDGERS;
 
       // 3. Build + sign + confirm create_bounty (deposits the XLM reward).
       const { txHash } = await runAction(bountyId, "create", address, {
@@ -88,6 +104,15 @@ export default function CreatePage() {
         <div className="field">
           <label>GitHub repository (owner/repo)</label>
           <input value={form.githubRepository} onChange={(e) => set("githubRepository", e.target.value)} placeholder="alice/project" />
+        </div>
+        <div className="field">
+          <label>Technologies</label>
+          <input
+            value={form.tech}
+            onChange={(e) => set("tech", e.target.value)}
+            placeholder="React, TypeScript, Next.js"
+          />
+          <small style={{ color: "var(--text-dim)" }}>Separate technologies with commas.</small>
         </div>
         <div style={{ display: "flex", gap: 14 }}>
           <div className="field" style={{ flex: 1 }}>

@@ -22,7 +22,10 @@ jobs:
       - name: GitHub PR verification tests
         run: node --test
         working-directory: packages/github
-      - name: Stellar wallet + asset tests
+      - name: Install Stellar SDK (exercises XDR assembly tests)
+        run: npm install --no-save --no-audit --no-fund @stellar/stellar-sdk@13
+        working-directory: packages/stellar
+      - name: Stellar wallet + contract client tests
         run: node --test
         working-directory: packages/stellar
 
@@ -32,11 +35,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: contracts/bounty-escrow
+          workspaces: contracts
       - name: cargo test (bounty-escrow)
         run: cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
+      - name: Build release WASM
+        run: cargo build --release --target wasm32v1-none --manifest-path contracts/Cargo.toml -p bounty-escrow
+      - name: Report WASM size
+        run: ls -l contracts/target/wasm32v1-none/release/bounty_escrow.wasm
 
   web:
     name: Site Build

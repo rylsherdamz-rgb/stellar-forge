@@ -1,0 +1,20 @@
+{
+  "task": "bounty-escrow-v0.2",
+  "status": "complete",
+  "waves": [
+    {"wave": 1, "mode": "parallel", "nodes": ["contracts", "client-merge", "site-merge"]},
+    {"wave": 2, "mode": "parallel", "nodes": ["client-v2", "ops"]}
+  ],
+  "nodes": {
+    "contracts":    {"agent": "stellar-contracts", "status": "verified", "retries": 0, "paths": ["contracts/"], "verifier": "evals/01-contract-eval.md", "contract": "emit ABI (methods, errors 1-21)", "delta": {"wasm_size_bytes": 29655, "tests": 37}},
+    "client-merge": {"agent": "stellar-frontend", "status": "verified", "retries": 0, "paths": ["packages/stellar/"], "verifier": "evals/02-frontend-eval.md", "contract": "merge PR #22", "delta": {"pr": 22}},
+    "site-merge":   {"agent": "stellar-frontend", "status": "verified", "retries": 0, "paths": ["site/"], "verifier": "evals/02-frontend-eval.md", "contract": "merge PR #27", "delta": {"pr": 27}},
+    "client-v2":    {"agent": "stellar-frontend", "status": "verified", "retries": 1, "paths": ["packages/stellar/"], "verifier": "evals/02-frontend-eval.md", "contract": "wrap v0.2 methods", "delta": {"tests": 24}},
+    "ops":          {"agent": "stellar-ops", "status": "verified", "retries": 0, "paths": [".github/workflows/"], "verifier": "evals/04-e2e-eval.md", "contract": "CI builds WASM + runs SDK-backed tests", "delta": {}}
+  },
+  "edges": [
+    {"from": "contracts", "to": "client-v2", "type": "sequential", "data": "ABI"},
+    {"from": "client-merge", "to": "client-v2", "type": "sequential", "data": "client base"},
+    {"from": "client-v2", "to": "ops", "type": "parallel", "data": "test commands"}
+  ]
+}
