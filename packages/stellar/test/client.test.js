@@ -39,7 +39,9 @@ function decodeInvoke(op) {
   const ic = typeof func.invokeContract === "function" ? func.invokeContract() : func.invokeContract;
   const name = typeof ic.functionName === "function" ? ic.functionName() : ic.functionName;
   const args = typeof ic.args === "function" ? ic.args() : ic.args;
-  return { functionName: Buffer.from(name).toString("utf8"), args };
+  // functionName() returns an XdrString in stellar-sdk 17; Buffer.from() on it
+  // yields zero bytes, so stringify it instead.
+  return { functionName: String(name), args };
 }
 
 test("BountyEscrowClient initializes with default testnet configurations", () => {
