@@ -41,23 +41,25 @@ export default function CreatePage() {
       const deadlineLedger =
         Number(chain.latestLedger) +
         Number(form.deadlineDays) * DAY_LEDGERS;
-      // 1. Create off-chain metadata record.
+
+      // 2. Create off-chain metadata record.
       const createRes = await fetch("/api/bounties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-        ...form,
-        tech: form.tech
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+          ...form,
+          tech: form.tech
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
           deadlineLedger,
-        creator: address,
-      }),
+          creator: address,
+        }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error);
       const bountyId = createData.bounty.id as string;
+
       // 3. Build + sign + confirm create_bounty (deposits the XLM reward).
       const { txHash } = await runAction(bountyId, "create", address, {
         deadlineLedger,
@@ -104,16 +106,14 @@ export default function CreatePage() {
           <input value={form.githubRepository} onChange={(e) => set("githubRepository", e.target.value)} placeholder="alice/project" />
         </div>
         <div className="field">
-  <label>Technologies</label>
-  <input
-    value={form.tech}
-    onChange={(e) => set("tech", e.target.value)}
-    placeholder="React, TypeScript, Next.js"
-  />
-  <small style={{ color: "var(--text-dim)" }}>
-    Separate technologies with commas.
-  </small>
-</div>
+          <label>Technologies</label>
+          <input
+            value={form.tech}
+            onChange={(e) => set("tech", e.target.value)}
+            placeholder="React, TypeScript, Next.js"
+          />
+          <small style={{ color: "var(--text-dim)" }}>Separate technologies with commas.</small>
+        </div>
         <div style={{ display: "flex", gap: 14 }}>
           <div className="field" style={{ flex: 1 }}>
             <label>Reward (XLM)</label>

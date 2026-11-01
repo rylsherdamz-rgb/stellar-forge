@@ -73,9 +73,7 @@ export async function POST(req: Request) {
     requirements: body.requirements,
     acceptanceCriteria: body.acceptanceCriteria,
     githubRepository: body.githubRepository,
-    tech: Array.isArray(body.tech)
-  ? body.tech.map((item: unknown) => String(item).trim()).filter(Boolean)
-  : [],
+    tech,
     rewardAmount: String(body.rewardAmount),
     asset: "XLM",
     deadlineLedger: body.deadlineLedger ?? null,
