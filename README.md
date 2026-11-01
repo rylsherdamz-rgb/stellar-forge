@@ -82,19 +82,33 @@ Soroban contract that owns the full bounty state machine on-chain.
 | Function | Who | Effect |
 |---|---|---|
 | `create_bounty(creator, token, amount, deadline, metadata_hash)` | creator | Pulls the reward into escrow, opens the bounty, returns `id` |
-| `claim_bounty(bounty_id, developer)` | developer | `Open → Claimed` (rejects double-claim, past deadline) |
-| `submit_bounty(bounty_id, developer, submission_hash)` | claiming developer | `Claimed → Submitted` |
+| `claim_bounty(bounty_id, developer)` | developer | `Open → Claimed` (rejects double-claim, past deadline, self-claim) |
+| `unclaim_bounty(bounty_id, developer)` | claiming developer | Abandons the claim, `Claimed → Open` |
+| `submit_bounty(bounty_id, developer, submission_hash)` | claiming developer | `Claimed → Submitted` (before the deadline) |
 | `approve_bounty(bounty_id)` | creator | Verifies state + auth, **transfers reward**, `Submitted → Completed` |
 | `release_payment(bounty_id)` | creator | Explicit release alias |
 | `cancel_bounty(bounty_id)` | creator | Refunds an unclaimed bounty, `Open → Cancelled` |
-| `refund_bounty(bounty_id)` | creator | Refunds after deadline, `→ Refunded` |
-| `get_bounty(id)` / `next_id()` / `admin()` | anyone | Read-only views |
+| `refund_bounty(bounty_id)` | creator | Refunds an `Open`/`Claimed` bounty after deadline, `→ Refunded` |
+| `extend_deadline(bounty_id, new_deadline)` | creator | Moves the deadline later (never earlier) |
+| `dispute_bounty(bounty_id, caller)` | creator or developer | `Submitted → Disputed`; funds stay locked |
+| `resolve_dispute(bounty_id, pay_developer)` | admin | `Disputed → Completed` (pay dev) or `→ Refunded` |
+| `pause()` / `unpause()` | admin | Blocks new create/claim; exits always stay open |
+| `set_token_allowed(token, allowed)` | admin | On-chain deposit-asset allowlist (SPEC §17) |
+| `set_admin(new_admin)` / `upgrade(wasm_hash)` | admin (+ new admin) | Admin rotation, in-place WASM upgrade |
+| `get_bounty(id)` / `next_id()` / `admin()` / `is_paused()` / `is_token_allowed(token)` | anyone | Read-only views |
 
 On-chain status: `Open · Claimed · Submitted · Completed · Cancelled · Expired · Disputed · Refunded`.
 
 **Security model:** only the creator can approve; only the claiming developer can
-submit; `amount > 0`, the deadline, and every state transition are enforced in the
-contract. The frontend is never trusted to decide whether money moves.
+submit; `amount > 0`, the deadline, the token allowlist, and every state transition
+are enforced in the contract. A submitted bounty can never be refunded unilaterally —
+it is either approved or disputed and settled by the admin, so escrow can't be
+locked forever. The admin can't move funds outside a dispute, and pausing never
+blocks exits. The frontend is never trusted to decide whether money moves.
+
+> **v0.2 note:** the testnet deployment below runs v0.1, which has no `upgrade`
+> entrypoint. v0.2 needs a fresh deploy, then `initialize(admin)` and
+> `set_token_allowed(<native XLM SAC>, true)` before the first `create_bounty`.
 
 ### Live on Stellar Testnet
 

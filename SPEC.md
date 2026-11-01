@@ -39,7 +39,7 @@ Project Owner --create--> Stellar Forge --deposit--> Soroban Escrow
 ```text
 DRAFT -> FUNDING -> OPEN -> CLAIMED -> SUBMITTED -> APPROVED -> COMPLETED
 OPEN -> EXPIRED -> REFUNDED
-CLAIMED -> DISPUTED -> (REFUND | RELEASE)
+SUBMITTED -> DISPUTED -> (REFUND | RELEASE)   # admin settles; creator cannot refund
 OPEN -> CANCELLED -> REFUNDED
 ```
 
@@ -54,7 +54,14 @@ submit_bounty(bounty_id, developer, submission_hash)
 approve_bounty(bounty_id)          // creator only
 release_payment(bounty_id)         // pays developer
 cancel_bounty(bounty_id)           // creator, pre-claim
-refund_bounty(bounty_id)           // expired/eligible
+refund_bounty(bounty_id)           // creator, Open/Claimed after deadline
+unclaim_bounty(bounty_id, developer)          // v0.2: developer abandons
+extend_deadline(bounty_id, new_deadline)      // v0.2: creator, later only
+dispute_bounty(bounty_id, caller)             // v0.2: creator|developer, Submitted -> Disputed
+resolve_dispute(bounty_id, pay_developer)     // v0.2: admin, Disputed -> Completed|Refunded
+pause() / unpause()                           // v0.2: admin, blocks create/claim only
+set_token_allowed(token, allowed)             // v0.2: admin, verified-asset allowlist
+set_admin(new_admin) / upgrade(wasm_hash)     // v0.2: admin
 ```
 
 Contract state per bounty:
