@@ -32,7 +32,7 @@
     "toml": "^5.0.1",
     "protobufjs": "^7.6.6",
     "brace-expansion@1": "^1.1.21",
-    "follow-redirects": "^1.16.0",
+    "follow-redirects": "^1.16.2",
     "form-data@4": "^4.0.5",
     "zod@4": "^4.6.7"
   }
