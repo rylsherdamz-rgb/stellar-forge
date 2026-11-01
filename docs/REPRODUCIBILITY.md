@@ -10,14 +10,21 @@ environment, validated on Stellar Testnet. It satisfies the Instaward SOW
 |---|---|
 | Rust + `wasm32v1-none` target | rustc 1.96 |
 | Stellar CLI (`stellar`) | 27.0.0 |
-| Node.js | ≥ 20 |
+| Node.js | 22.23.4 (see `.nvmrc`) |
 | A funded Testnet identity | `stellar keys generate <name> && stellar keys fund <name> --network testnet` |
 
 ## 1. Contract — build, test, deploy
 
 ```bash
-# unit tests (17: happy path, auth, double-claim, unauthorized, expiry, zero reward, ...)
+# unit tests (49: lifecycle, auth, disputes, review window, fees, pause, allowlist, events, ...)
 cargo test --manifest-path contracts/bounty-escrow/Cargo.toml
+
+# one-shot: test → build → deploy → initialize → allowlist native XLM (v0.2+)
+STELLAR_DEPLOYER=<name> ./scripts/deploy-bounty-escrow.sh testnet
+#   optional: FEE_BPS=250 FEE_RECIPIENT=G... REVIEW_PERIOD=120960 DRY_RUN=1
+# prints a JSON entry for data/deployments/testnet.json
+
+# --- or manually ---
 
 # build the optimized wasm
 stellar contract build --manifest-path contracts/bounty-escrow/Cargo.toml
@@ -31,6 +38,10 @@ stellar contract deploy \
 # initialize with an admin
 stellar contract invoke --id <CONTRACT_ID> --source <name> --network testnet \
   -- initialize --admin $(stellar keys address <name>)
+
+# v0.2+: deposits require an allowlisted token
+stellar contract invoke --id <CONTRACT_ID> --source <name> --network testnet \
+  -- set_token_allowed --token $(stellar contract id asset --asset native --network testnet) --allowed true
 ```
 
 The reference deployment (already live) is recorded in

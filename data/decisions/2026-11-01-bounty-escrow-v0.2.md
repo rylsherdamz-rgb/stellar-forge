@@ -27,3 +27,16 @@ code path ever set. The stored `Admin` had no powers, errors were declared as
   `data/deployments/testnet.json` and the client's `BOUNTY_ESCROW_CONTRACT_ID`.
 - Dispute resolution trusts the admin. A multisig or DAO admin is the follow-up.
 - Event payloads changed shape (typed structs), and the indexer (#15) should target v0.2.
+
+## Addendum — v0.3 (#34, #35, #36, #37)
+- **Reject/revise:** `reject_submission` is allowed only before the deadline, so a
+  late rejection can't be followed by a refund.
+- **Review window:** an optimistic `claim_after_review` protects developers from
+  creators who never respond. The creator always has an explicit window to approve,
+  reject, or dispute. This is not merge-based auto-release (SPEC §19).
+- **Fee:** at most 10%, only on developer payouts, and rounded down so net + fee == amount.
+- **Snapshot:** fee and review period are stored per bounty in `Terms(id)` at
+  creation, outside `Bounty`, so admin changes never alter live bounties and the
+  struct layout clients decode stays the same.
+- **Deploy:** `scripts/deploy-bounty-escrow.sh` is the reproducible path. It is
+  gated on tests and never writes the kernel-owned registry.
