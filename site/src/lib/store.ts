@@ -29,6 +29,8 @@ export interface Submission {
 export interface Bounty {
   id: string; // local id
   escrowId: number | null; // on-chain bounty id (source of truth link)
+  /** Contract holding the escrow. Absent on records created before v0.2. */
+  contractId?: string;
   title: string;
   description: string;
   requirements: string;
@@ -55,6 +57,9 @@ export interface Bounty {
     approved?: string;
     refunded?: string;
     cancelled?: string;
+    unclaimed?: string;
+    disputed?: string;
+    extended?: string;
   };
   createdAt: string;
   updatedAt: string;

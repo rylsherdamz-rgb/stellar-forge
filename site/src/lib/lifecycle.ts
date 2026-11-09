@@ -14,7 +14,13 @@ export type BountyStatus =
   | "DISPUTED"
   | "REFUNDED";
 
-export type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel";
+export type Action =
+  | "create" | "claim" | "submit" | "approve" | "refund" | "cancel"
+  // v0.2 only:
+  | "unclaim" | "dispute" | "extend";
+
+/** Actions the v0.1 contract does not implement. */
+export const V2_ONLY: Action[] = ["unclaim", "dispute", "extend"];
 
 export const LEDGERS_PER_DAY = 17280; // ~5s ledgers
 
@@ -26,16 +32,22 @@ export const METHOD_FOR: Record<Action, string> = {
   approve: "approve_bounty",
   refund: "refund_bounty",
   cancel: "cancel_bounty",
+  unclaim: "unclaim_bounty",
+  dispute: "dispute_bounty",
+  extend: "extend_deadline",
 };
 
-/** Status the bounty is in after the action succeeds. */
-export const STATUS_AFTER: Record<Action, BountyStatus> = {
+/** Status the bounty is in after the action succeeds (null: unchanged). */
+export const STATUS_AFTER: Record<Action, BountyStatus | null> = {
   create: "OPEN",
   claim: "CLAIMED",
   submit: "SUBMITTED",
   approve: "COMPLETED",
   refund: "REFUNDED",
   cancel: "CANCELLED",
+  unclaim: "OPEN",
+  dispute: "DISPUTED",
+  extend: null,
 };
 
 // The contract's Status enum has explicit discriminants, so soroban encodes it
@@ -70,6 +82,8 @@ export interface ActionContext {
   claimedBy: string | null;
   deadlineLedger: number | null;
   escrowId: number | null;
+  /** Escrow lives on the v0.1 contract, which lacks the V2_ONLY calls. */
+  legacy?: boolean;
 }
 
 /**
@@ -93,6 +107,12 @@ export function blockReason(
     return null;
   }
   if (b.escrowId == null) return "This bounty has not been funded on-chain yet.";
+  if (b.status === "DISPUTED" && action !== "extend") {
+    return "This bounty is in dispute. The contract admin will pay the developer or refund the creator.";
+  }
+  if (b.legacy && V2_ONLY.includes(action)) {
+    return "This bounty's escrow is on contract v0.1, which does not support this.";
+  }
 
   switch (action) {
     case "claim":
@@ -118,11 +138,31 @@ export function blockReason(
       if (!isCreator) return "Only the creator can refund.";
       if (ledger != null && !past) return "Refunds unlock after the deadline.";
       return null;
+    case "unclaim":
+      if (b.status !== "CLAIMED") return "Only a claimed bounty can be released.";
+      if (!isDev) return "Only the developer who claimed it can release it.";
+      return null;
+    case "dispute":
+      if (b.status !== "SUBMITTED") return "Only a submitted bounty can be disputed.";
+      if (!isCreator && !isDev) return "Only the creator or developer can open a dispute.";
+      return null;
+    case "extend":
+      if (b.status !== "OPEN" && b.status !== "CLAIMED" && b.status !== "SUBMITTED") {
+        return "Only active bounties can be extended.";
+      }
+      if (!isCreator) return "Only the creator can extend the deadline.";
+      return null;
   }
 }
 
 /** Ordered steps of the happy path, for progress UIs. */
 export const HAPPY_PATH: BountyStatus[] = ["OPEN", "CLAIMED", "SUBMITTED", "COMPLETED"];
+
+/** New deadline ledger for an extension of `days`, counted from whichever is later. */
+export function extendedDeadline(current: number | null, ledger: number, days: number): number {
+  if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error("Extension must be 1-365 days");
+  return Math.max(current ?? 0, ledger) + days * LEDGERS_PER_DAY;
+}
 
 export function stepIndex(status: BountyStatus): number {
   return HAPPY_PATH.indexOf(status);

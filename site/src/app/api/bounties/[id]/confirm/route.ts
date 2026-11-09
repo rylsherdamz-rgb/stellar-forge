@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getBounty, updateBounty, type Bounty } from "@/lib/store";
 import { submitSigned, readBounty, inspectInvocation } from "@/lib/contract";
 import { verifySubmission } from "@/lib/github";
-import { CONFIG } from "@/lib/config";
+import { CONFIG, escrowContract } from "@/lib/config";
 import {
   METHOD_FOR,
   STATUS_AFTER,
@@ -17,6 +17,9 @@ const TX_KEY: Record<Action, keyof Bounty["tx"]> = {
   approve: "approved",
   refund: "refunded",
   cancel: "cancelled",
+  unclaim: "unclaimed",
+  dispute: "disputed",
+  extend: "extended",
 };
 
 // POST /api/bounties/:id/confirm
@@ -49,7 +52,8 @@ export async function POST(
 
   // The signed transaction must be exactly the call this action implies.
   const inv = inspectInvocation(signedXdr);
-  if (!inv || inv.contractId !== CONFIG.contractId || inv.method !== METHOD_FOR[action]) {
+  const contractId = escrowContract(bounty);
+  if (!inv || inv.contractId !== contractId || inv.method !== METHOD_FOR[action]) {
     return NextResponse.json(
       { error: `Transaction is not a ${METHOD_FOR[action]} call on the escrow contract` },
       { status: 400 },
@@ -75,7 +79,7 @@ export async function POST(
   }
 
   const patch: Partial<Bounty> = {
-    status: STATUS_AFTER[action],
+    status: STATUS_AFTER[action] ?? bounty.status,
     tx: { [TX_KEY[action]]: hash },
   };
 
@@ -84,9 +88,13 @@ export async function POST(
     // create_bounty returns the new on-chain id.
     escrowId = Number(returnValue);
     patch.escrowId = Number.isFinite(escrowId) ? escrowId : null;
+    patch.contractId = CONFIG.contractId;
   }
   if (action === "claim") {
     patch.claimedBy = String(inv.args[1]);
+  }
+  if (action === "unclaim") {
+    patch.claimedBy = null;
   }
   if (action === "submit") {
     const prUrl = String(body.githubPrUrl ?? "");
@@ -120,12 +128,13 @@ export async function POST(
 
   // The contract is the source of truth: prefer its status when readable.
   if (escrowId != null && Number.isFinite(escrowId)) {
-    const onchain = await readBounty(escrowId);
+    const onchain = await readBounty(escrowId, contractId);
     if (onchain) {
       patch.onchainStatus = onchain.status;
       const s = fromOnchainStatus(onchain.status);
       if (s) patch.status = s;
-      if (onchain.developer) patch.claimedBy = onchain.developer;
+      patch.claimedBy = onchain.developer;
+      patch.deadlineLedger = onchain.deadline;
     }
   }
 

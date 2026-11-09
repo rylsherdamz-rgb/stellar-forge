@@ -40,8 +40,9 @@ Users are developers and technical creators: wallets, GitHub, PRs, testnet, and 
 
 ## Evidence on Hand
 
-- Escrow contract deployed + initialized on Stellar Testnet: `CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU` (see `data/deployments/testnet.json`).
-- 17 passing contract unit tests covering happy path, auth, and every failure transition.
+- Escrow contract v0.2 deployed + initialized on Stellar Testnet: `CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ`, with native XLM allowlisted (see `data/deployments/testnet.json`; v0.1 at `CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU`).
+- Full lifecycle exercised on testnet through the web app, including release, deadline extension, dispute and admin resolution (`site/scripts/e2e-testnet.mjs`).
+- 37 passing contract unit tests covering happy path, auth, disputes, admin controls, and every failure transition.
 - SPEC.md documents the full product; README.md documents the contract and flow.
 - No testimonials, customer logos, benchmarks, or pricing exist; must not be fabricated.
 

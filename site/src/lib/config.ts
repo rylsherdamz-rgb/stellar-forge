@@ -9,9 +9,10 @@ export const CONFIG = {
   networkPassphrase:
     process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE ||
     "Test SDF Network ; September 2015",
+  // bounty-escrow v0.2 (data/deployments/testnet.json). New bounties go here.
   contractId:
     process.env.NEXT_PUBLIC_CONTRACT_ID ||
-    "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU",
+    "CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ",
   // Native XLM Stellar Asset Contract on testnet - the required settlement token.
   xlmSac:
     process.env.NEXT_PUBLIC_XLM_SAC ||
@@ -24,4 +25,17 @@ export function explorerTx(hash: string): string {
 }
 export function explorerContract(id: string): string {
   return `${CONFIG.explorerBase}/contract/${id}`;
+}
+
+/** The v0.1 deployment. Records funded before contractId was stored live here. */
+export const LEGACY_CONTRACT_ID = "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU";
+
+/** Which contract holds this bounty's escrow. */
+export function escrowContract(b: { contractId?: string; escrowId: number | null }): string {
+  if (b.contractId) return b.contractId;
+  return b.escrowId != null ? LEGACY_CONTRACT_ID : CONFIG.contractId;
+}
+
+export function isLegacy(b: { contractId?: string; escrowId: number | null }): boolean {
+  return escrowContract(b) === LEGACY_CONTRACT_ID;
 }

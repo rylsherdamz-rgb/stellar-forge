@@ -281,3 +281,15 @@
 .mkt-footer .mkt-container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .mkt-footer .footer-links { display: flex; gap: 18px; }
 .mkt-footer a:hover { color: #a3a3c2; }
+
+/* confirm step + extend deadline */
+.mkt .confirm { border: 1px solid var(--border-hover); background: var(--surface2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.mkt .confirm p { margin: 0; color: var(--text-dim); }
+.mkt .confirm-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.mkt .confirm-row .btn { padding: 8px 14px; font-size: 0.84rem; }
+.mkt .extend { display: flex; flex-direction: column; gap: 6px; }
+.mkt .actions > * + .extend { padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--border); }
+.mkt .extend-row { display: flex; align-items: center; gap: 8px; }
+.mkt .extend-row input { width: 64px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-input); color: var(--text); padding: 7px 10px; font: inherit; }
+.mkt .extend-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.mkt .extend-row .btn { padding: 7px 14px; font-size: 0.84rem; margin-left: auto; }

@@ -89,8 +89,12 @@ test("on-chain status mapping covers every contract variant", () => {
 
 test("every action maps to a contract method and a resulting status", () => {
   for (const a of Object.keys(METHOD_FOR) as (keyof typeof METHOD_FOR)[]) {
-    assert.match(METHOD_FOR[a], /_bounty$/);
-    assert.ok(STATUS_AFTER[a]);
+    assert.match(METHOD_FOR[a], /^[a-z]+_(bounty|deadline)$/);
+    assert.ok(a in STATUS_AFTER);
+  }
+  assert.equal(STATUS_AFTER.extend, null, "extending keeps the current status");
+  for (const a of ["create", "claim", "submit", "approve", "refund", "cancel", "unclaim", "dispute"] as const) {
+    assert.ok(STATUS_AFTER[a], a);
   }
 });
 
@@ -146,4 +150,57 @@ test("metadata and submission hashes are deterministic 32-byte commitments", asy
   const s1 = await submissionHash("https://github.com/o/r/pull/1 ", "abc");
   const s2 = await submissionHash("https://github.com/o/r/pull/1", "abc");
   assert.equal(toHex(s1), toHex(s2));
+});
+
+// ---- v0.2 actions and per-bounty contracts ----
+import { extendedDeadline, LEDGERS_PER_DAY } from "../src/lib/lifecycle.ts";
+import { escrowContract, isLegacy, LEGACY_CONTRACT_ID, CONFIG } from "../src/lib/config.ts";
+
+test("unclaim: only the claiming developer, only while claimed", () => {
+  const b = bounty({ status: "CLAIMED", claimedBy: DEV });
+  assert.equal(blockReason(b, "unclaim", DEV), null);
+  assert.match(blockReason(b, "unclaim", CREATOR)!, /Only the developer/);
+  assert.match(blockReason(bounty(), "unclaim", DEV)!, /Only a claimed/);
+});
+
+test("dispute: creator or developer, only once submitted", () => {
+  const b = bounty({ status: "SUBMITTED", claimedBy: DEV });
+  assert.equal(blockReason(b, "dispute", CREATOR), null);
+  assert.equal(blockReason(b, "dispute", DEV), null);
+  assert.match(blockReason(b, "dispute", OTHER)!, /creator or developer/);
+  assert.match(blockReason(bounty({ status: "CLAIMED", claimedBy: DEV }), "dispute", CREATOR)!, /Only a submitted/);
+});
+
+test("extend: creator only, while the bounty is active", () => {
+  for (const status of ["OPEN", "CLAIMED", "SUBMITTED"] as const) {
+    assert.equal(blockReason(bounty({ status, claimedBy: DEV }), "extend", CREATOR), null, status);
+  }
+  assert.match(blockReason(bounty(), "extend", DEV)!, /Only the creator/);
+  assert.match(blockReason(bounty({ status: "DISPUTED" }), "extend", CREATOR)!, /active/);
+  assert.equal(extendedDeadline(1000, 500, 2), 1000 + 2 * LEDGERS_PER_DAY);
+  assert.equal(extendedDeadline(1000, 5000, 1), 5000 + LEDGERS_PER_DAY, "counts from now if already past");
+  assert.throws(() => extendedDeadline(1000, 500, 0));
+});
+
+test("v0.1 escrows never get v0.2-only actions", () => {
+  const legacy = bounty({ status: "CLAIMED", claimedBy: DEV, legacy: true });
+  assert.match(blockReason(legacy, "unclaim", DEV)!, /v0\.1/);
+  assert.match(blockReason({ ...legacy, status: "SUBMITTED" }, "dispute", CREATOR)!, /v0\.1/);
+  // Shared calls still work on v0.1.
+  assert.equal(blockReason({ ...legacy, status: "SUBMITTED" }, "approve", CREATOR), null);
+});
+
+test("escrowContract resolves where a bounty's money lives", () => {
+  assert.equal(escrowContract({ contractId: "CXYZ", escrowId: 4 }), "CXYZ");
+  assert.equal(escrowContract({ escrowId: 1 }), LEGACY_CONTRACT_ID, "funded before contractId existed -> v0.1");
+  assert.equal(escrowContract({ escrowId: null }), CONFIG.contractId, "drafts fund on the current contract");
+  assert.equal(isLegacy({ escrowId: 1 }), true);
+  assert.equal(isLegacy({ contractId: CONFIG.contractId, escrowId: 0 }), false);
+});
+
+test("a disputed bounty is frozen for both parties", () => {
+  const d = bounty({ status: "DISPUTED", claimedBy: DEV });
+  for (const a of ["approve", "refund", "cancel", "claim", "submit", "dispute"] as const) {
+    assert.match(blockReason(d, a, a === "submit" ? DEV : CREATOR, 2000)!, /in dispute/, a);
+  }
 });

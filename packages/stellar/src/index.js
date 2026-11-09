@@ -117,7 +117,7 @@ export const ASSETS = Object.freeze({
  * Deployed bounty-escrow contract ID on testnet.
  */
 export const BOUNTY_ESCROW_CONTRACT_ID =
-  "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU";
+  "CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ"; // v0.2 (data/deployments/testnet.json)
 
 /**
  * Testnet network passphrase.

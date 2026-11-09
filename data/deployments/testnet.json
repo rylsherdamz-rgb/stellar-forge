@@ -11,7 +11,7 @@
       "wasm_size_bytes": 21562
     },
     {
-      "name": "bounty-escrow",
+      "name": "bounty-escrow-v0.1",
       "contract_id": "CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU",
       "wasm_hash": "bc81fb2ddaa063fa967527b96853d17f78ee991497d62cd79d62b8ff75039764",
       "deployed_at": "2026-09-09T20:10:00Z",
@@ -19,7 +19,32 @@
       "wasm_size_bytes": 9507,
       "admin": "GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW",
       "initialized": true,
-      "explorer": "https://stellar.expert/explorer/testnet/contract/CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU"
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU",
+      "version": "0.1.0",
+      "status": "legacy (escrows #0-#1 settled here; read-only for the app)"
+    },
+    {
+      "name": "bounty-escrow",
+      "version": "0.2.0",
+      "contract_id": "CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ",
+      "wasm_hash": "eb0687056307ba4c3ec7a9d0da69733f733d3d83292ab0063016fb1d0bc925f7",
+      "deployed_at": "2026-11-09T13:22:29Z",
+      "source": "contracts/bounty-escrow",
+      "wasm_size_bytes": 29655,
+      "admin": "GBESFZYNJO47NLKJ3RPM4SROWL772QCDNTRA7RRMM2IY5UU7UTCMSLNA",
+      "admin_note": "throwaway testnet key generated at deploy; set_admin needs the new admin's signature, so rotate to the project admin with both signatures",
+      "initialized": true,
+      "allowed_tokens": [
+        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+      ],
+      "deploy_txs": {
+        "upload": "313a1bfdcfc3da1b263ad2ad45b420c0287c0dc95826ef2d232bb012120f1423",
+        "create": "2528de36d9838f6a0e67c9e465331ee8f66dee2b8c84970559ac7108c2cba6ab",
+        "initialize": "70db6b2c9b0d88b170875c0692ecb760ef9c2ed317b1e74f0584e2f2d73dda23",
+        "allow_xlm": "bd4e912aed88c405578610b51daa9b574682b37664456074a87b801ec061a509"
+      },
+      "deploy_script": "site/scripts/deploy-testnet.mjs",
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ"
     }
   ]
 }

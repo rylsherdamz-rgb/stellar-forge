@@ -7,6 +7,7 @@ export interface ChainInfo {
   contractId: string;
   latestLedger: number;
   nextId: number | null;
+  paused: boolean | null;
 }
 
 /** Latest ledger + escrow counter, refreshed every 30s. null while unknown. */

@@ -1,0 +1,22 @@
+{
+  "task": "escrow-v0.2-testnet",
+  "status": "complete",
+  "waves": [
+    {"wave": 1, "mode": "sequential", "nodes": ["deploy"]},
+    {"wave": 2, "mode": "parallel", "nodes": ["client", "api", "ui"]},
+    {"wave": 3, "mode": "sequential", "nodes": ["testnet-e2e"]}
+  ],
+  "nodes": {
+    "deploy":      {"agent": "stellar-ops", "status": "verified", "retries": 0, "paths": ["site/scripts/deploy-testnet.mjs"], "verifier": "evals/04-e2e-eval.md", "contract": "emit contract id + wasm hash", "delta": {"contract_id": "CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ", "wasm_hash": "eb0687056307ba4c3ec7a9d0da69733f733d3d83292ab0063016fb1d0bc925f7"}},
+    "client":      {"agent": "stellar-frontend", "status": "verified", "retries": 0, "paths": ["site/src/lib/", "packages/stellar/src/"], "verifier": "evals/02-frontend-eval.md", "contract": "per-bounty contract; buildAction for all 9 actions", "delta": {}},
+    "api":         {"agent": "stellar-backend", "status": "verified", "retries": 0, "paths": ["site/src/app/api/"], "verifier": "evals/03-backend-eval.md", "contract": "build/confirm for v0.2 actions; sync-on-read; paused flag", "delta": {}},
+    "ui":          {"agent": "stellar-frontend", "status": "verified", "retries": 1, "paths": ["site/src/app/(marketplace)/", "site/src/components/"], "verifier": "evals/02-frontend-eval.md", "contract": "release/dispute/extend controls with confirm step", "delta": {"retry_reason": "stray divider above extend form"}},
+    "testnet-e2e": {"agent": "stellar-ops", "status": "verified", "retries": 0, "paths": ["site/scripts/e2e-testnet.mjs"], "verifier": "evals/04-e2e-eval.md", "contract": "two scenarios green on v0.2", "delta": {"escrow_ids": [0, 1, 2]}}
+  },
+  "edges": [
+    {"from": "deploy", "to": "client", "type": "sequential", "data": "contract id"},
+    {"from": "client", "to": "api", "type": "parallel", "data": "buildAction"},
+    {"from": "api", "to": "testnet-e2e", "type": "sequential", "data": "endpoints"},
+    {"from": "ui", "to": "testnet-e2e", "type": "parallel", "data": "screens"}
+  ]
+}

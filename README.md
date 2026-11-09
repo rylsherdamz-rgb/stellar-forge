@@ -114,9 +114,14 @@ blocks exits. The frontend is never trusted to decide whether money moves.
 
 | | |
 |---|---|
-| **Contract ID** | `CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU` |
-| **Admin** | `GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW` |
-| **Explorer** | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU) |
+| **Contract ID (v0.2)** | `CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ` |
+| **Admin** | `GBESFZYNJO47NLKJ3RPM4SROWL772QCDNTRA7RRMM2IY5UU7UTCMSLNA` |
+| **Allowed tokens** | native XLM (SAC `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`) |
+| **Explorer** | [stellar.expert](https://stellar.expert/explorer/testnet/contract/CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ) |
+| **Legacy v0.1** | `CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU` — earlier escrows remain readable there |
+
+Redeploy with `node site/scripts/deploy-testnet.mjs` (uploads the WASM, creates,
+initializes, and allowlists XLM; no stellar CLI needed).
 
 See [`data/deployments/testnet.json`](data/deployments/testnet.json).
 

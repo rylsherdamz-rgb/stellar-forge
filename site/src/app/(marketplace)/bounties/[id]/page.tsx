@@ -7,7 +7,7 @@ import { StatusPill } from "@/components/BountyCard";
 import Lifecycle from "@/components/Lifecycle";
 import { useChain } from "@/hooks/useChain";
 import { runAction, PHASE_LABEL, type Phase } from "@/lib/actions";
-import { CONFIG, explorerContract, explorerTx } from "@/lib/config";
+import { escrowContract, explorerContract, explorerTx, isLegacy } from "@/lib/config";
 import { blockReason, shortAddr, timeLeft, type Action } from "@/lib/lifecycle";
 import type { Bounty } from "@/lib/store";
 
@@ -20,7 +20,17 @@ const BUTTONS: Btn[] = [
   { action: "approve", label: "Approve & pay", kind: "primary" },
   { action: "cancel", label: "Cancel & refund", kind: "secondary" },
   { action: "refund", label: "Refund after deadline", kind: "secondary" },
+  { action: "unclaim", label: "Release my claim", kind: "secondary" },
+  { action: "dispute", label: "Open a dispute", kind: "secondary" },
 ];
+
+// Confirmation copy for actions that are hard to undo.
+const CONFIRM: Partial<Record<Action, string>> = {
+  approve: "This releases the full reward to the developer. It cannot be reversed.",
+  cancel: "This cancels the bounty and returns the reward to you.",
+  unclaim: "You give up the bounty and it reopens for anyone to claim.",
+  dispute: "The contract admin will decide whether the developer is paid or you are refunded. Neither side can approve or refund meanwhile.",
+};
 
 export default function BountyDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -32,6 +42,8 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
   const [phase, setPhase] = useState<Phase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
+  const [pending, setPending] = useState<Action | null>(null);
+  const [extendDays, setExtendDays] = useState("7");
 
   const load = useCallback(
     () =>
@@ -51,13 +63,14 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
     });
   }, [load]);
 
-  async function act(action: Action) {
+  async function act(action: Action, extra: Record<string, unknown> = {}) {
     setError(null);
     setLastTx(null);
+    setPending(null);
     const who = address ?? (await connect());
     if (!who) return;
     try {
-      const { txHash } = await runAction(id, action, who, {}, setPhase);
+      const { txHash } = await runAction(id, action, who, extra, setPhase);
       setLastTx(txHash);
       await load();
     } catch (e) {
@@ -84,8 +97,11 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
   }
 
   const role = !address ? null : address === bounty.creator ? "creator" : address === bounty.claimedBy ? "developer" : "visitor";
-  const available = bounty.demo ? [] : BUTTONS.filter((b) => !blockReason(bounty, b.action, address, ledger));
-  const canSubmit = !bounty.demo && !blockReason(bounty, "submit", address, ledger);
+  const ctx = { ...bounty, legacy: isLegacy(bounty) };
+  const available = bounty.demo ? [] : BUTTONS.filter((b) => !blockReason(ctx, b.action, address, ledger));
+  const canSubmit = !bounty.demo && !blockReason(ctx, "submit", address, ledger);
+  const canExtend = !bounty.demo && !blockReason(ctx, "extend", address, ledger);
+  const contractId = escrowContract(bounty);
   const settled = ["COMPLETED", "REFUNDED", "CANCELLED"].includes(bounty.status);
   const left = bounty.status === "OPEN" || bounty.status === "CLAIMED" ? timeLeft(bounty.deadlineLedger, ledger) : null;
 
@@ -179,16 +195,51 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
                       <Link href={`/bounties/${id}/submit`} className="btn btn-primary block-btn">Submit proof of work</Link>
                     )}
                     {available.map((b) => (
-                      <button key={b.action} className={`btn btn-${b.kind} block-btn`} onClick={() => act(b.action)} disabled={!!phase}>
+                      <button
+                        key={b.action}
+                        className={`btn btn-${b.kind} block-btn`}
+                        onClick={() => (CONFIRM[b.action] ? setPending(b.action) : act(b.action))}
+                        disabled={!!phase}
+                      >
                         {b.label}
                       </button>
                     ))}
+                    {pending && (
+                      <div className="confirm" role="alertdialog" aria-labelledby="confirm-text">
+                        <p id="confirm-text" className="small">{CONFIRM[pending]}</p>
+                        <div className="confirm-row">
+                          <button className="btn btn-primary" onClick={() => act(pending)} disabled={!!phase}>Confirm</button>
+                          <button className="btn btn-secondary" onClick={() => setPending(null)}>Keep as is</button>
+                        </div>
+                      </div>
+                    )}
+                    {canExtend && (
+                      <form
+                        className="extend"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          act("extend", { extendDays: Number(extendDays) });
+                        }}
+                      >
+                        <label htmlFor="extend-days" className="small dim">Extend deadline by</label>
+                        <div className="extend-row">
+                          <input id="extend-days" className="mono" inputMode="numeric" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} aria-describedby="extend-unit" />
+                          <span id="extend-unit" className="small dim">days</span>
+                          <button className="btn btn-secondary" disabled={!!phase || !/^\d+$/.test(extendDays) || Number(extendDays) < 1}>Extend</button>
+                        </div>
+                      </form>
+                    )}
                     {!address && (
                       <button className="btn btn-primary block-btn" onClick={connect}>Connect wallet</button>
                     )}
-                    {address && available.length === 0 && !canSubmit && (
+                    {chain?.paused && !bounty.demo && !ctx.legacy && (
+                      <div className="notice warn">The escrow contract is paused: no new bounties or claims. Approvals, refunds and disputes still work.</div>
+                    )}
+                    {address && available.length === 0 && !canSubmit && !canExtend && (
                       <p className="small dim">
-                        {blockReason(bounty, bounty.status === "OPEN" ? "claim" : bounty.status === "SUBMITTED" ? "approve" : "submit", address, ledger) ?? "Nothing to do right now."}
+                        {bounty.status === "DISPUTED"
+                          ? "In dispute. The contract admin will pay the developer or refund the creator."
+                          : blockReason(ctx, bounty.status === "OPEN" ? "claim" : bounty.status === "SUBMITTED" ? "approve" : "submit", address, ledger) ?? "Nothing to do right now."}
                       </p>
                     )}
                   </div>
@@ -208,7 +259,7 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
               <div><dt>Creator</dt><dd className="mono" title={bounty.creator}>{shortAddr(bounty.creator)}</dd></div>
               <div><dt>Developer</dt><dd className="mono" title={bounty.claimedBy ?? ""}>{shortAddr(bounty.claimedBy)}</dd></div>
               <div><dt>Deadline</dt><dd>{bounty.deadlineLedger ? <><span className="mono">#{bounty.deadlineLedger.toLocaleString()}</span>{left && <span className="dim"> · {left}</span>}</> : "—"}</dd></div>
-              <div><dt>Contract</dt><dd><a className="tx-link mono" href={explorerContract(CONFIG.contractId)} target="_blank" rel="noreferrer">{shortAddr(CONFIG.contractId)} ↗</a></dd></div>
+              <div><dt>Contract</dt><dd><span className="dim">{ctx.legacy ? "v0.1 · " : "v0.2 · "}</span><a className="tx-link mono" href={explorerContract(contractId)} target="_blank" rel="noreferrer">{shortAddr(contractId)} ↗</a></dd></div>
               {Object.entries(bounty.tx).filter(([, h]) => h).map(([k, h]) => (
                 <div key={k}><dt>{k[0].toUpperCase() + k.slice(1)} tx</dt><dd><a className="tx-link mono" href={explorerTx(h!)} target="_blank" rel="noreferrer">{h!.slice(0, 10)}… ↗</a></dd></div>
               ))}

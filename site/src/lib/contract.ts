@@ -18,7 +18,7 @@ import {
 } from "@stellar/stellar-sdk";
 import { CONFIG } from "./config";
 import { decodeContractError } from "./errors";
-import { decodeStatus } from "./lifecycle";
+import { decodeStatus, METHOD_FOR } from "./lifecycle";
 
 const server = new rpc.Server(CONFIG.rpcUrl, { allowHttp: false });
 
@@ -27,8 +27,8 @@ const server = new rpc.Server(CONFIG.rpcUrl, { allowHttp: false });
 // contract admin from data/deployments/testnet.json.
 const READ_SOURCE = "GD4QKRYD5ZCVU4ZT6MLGYYQZGNCMMN54BTIXMYJONML66M3HTHCKECDW";
 
-function contract(): Contract {
-  return new Contract(CONFIG.contractId);
+function contract(id: string): Contract {
+  return new Contract(id);
 }
 
 /** i128 stroops for a human XLM amount (7 decimals). */
@@ -52,6 +52,7 @@ export function stroopsToXlm(stroops: bigint): string {
 }
 
 async function buildInvoke(
+  contractId: string,
   source: string,
   method: string,
   args: xdr.ScVal[],
@@ -65,7 +66,7 @@ async function buildInvoke(
     fee: BASE_FEE,
     networkPassphrase: CONFIG.networkPassphrase,
   })
-    .addOperation(contract().call(method, ...args))
+    .addOperation(contract(contractId).call(method, ...args))
     .setTimeout(180)
     .build();
   // Simulate + prepare so auth + resource footprint are attached.
@@ -79,52 +80,54 @@ async function buildInvoke(
   }
 }
 
-/** create_bounty(creator, token, amount, deadline, metadata_hash) -> unsigned XDR */
-export async function buildCreateBounty(params: {
-  creator: string;
-  amountXlm: string;
-  deadlineLedger: number;
-  metadataHash: Uint8Array; // 32 bytes
-}): Promise<string> {
-  return buildInvoke(params.creator, "create_bounty", [
-    new Address(params.creator).toScVal(),
-    new Address(CONFIG.xlmSac).toScVal(),
-    nativeToScVal(xlmToStroops(params.amountXlm), { type: "i128" }),
-    nativeToScVal(params.deadlineLedger, { type: "u32" }),
-    nativeToScVal(Buffer.from(params.metadataHash), { type: "bytes" }),
-  ]);
+export type ActionArgs =
+  | { action: "create"; amountXlm: string; deadlineLedger: number; metadataHash: Uint8Array }
+  | { action: "claim" | "unclaim" | "dispute" }
+  | { action: "submit"; submissionHash: Uint8Array }
+  | { action: "approve" | "refund" | "cancel" }
+  | { action: "extend"; newDeadline: number };
+
+/** Contract arguments for each action, in the order the contract expects. */
+function encodeArgs(a: ActionArgs, source: string, escrowId: number | null): xdr.ScVal[] {
+  const id = () => nativeToScVal(escrowId!, { type: "u64" });
+  const who = () => new Address(source).toScVal();
+  switch (a.action) {
+    case "create":
+      return [
+        who(),
+        new Address(CONFIG.xlmSac).toScVal(),
+        nativeToScVal(xlmToStroops(a.amountXlm), { type: "i128" }),
+        nativeToScVal(a.deadlineLedger, { type: "u32" }),
+        nativeToScVal(Buffer.from(a.metadataHash), { type: "bytes" }),
+      ];
+    case "claim":
+    case "unclaim":
+    case "dispute":
+      return [id(), who()];
+    case "submit":
+      return [id(), who(), nativeToScVal(Buffer.from(a.submissionHash), { type: "bytes" })];
+    case "approve":
+    case "refund":
+    case "cancel":
+      return [id()];
+    case "extend":
+      return [id(), nativeToScVal(a.newDeadline, { type: "u32" })];
+  }
 }
 
-export async function buildClaimBounty(params: {
-  developer: string;
-  escrowId: number;
+/** Unsigned, simulated XDR for `args.action` on the bounty's contract. */
+export async function buildAction(params: {
+  contractId: string;
+  source: string;
+  escrowId: number | null;
+  args: ActionArgs;
 }): Promise<string> {
-  return buildInvoke(params.developer, "claim_bounty", [
-    nativeToScVal(params.escrowId, { type: "u64" }),
-    new Address(params.developer).toScVal(),
-  ]);
-}
-
-export async function buildSubmitBounty(params: {
-  developer: string;
-  escrowId: number;
-  submissionHash: Uint8Array;
-}): Promise<string> {
-  return buildInvoke(params.developer, "submit_bounty", [
-    nativeToScVal(params.escrowId, { type: "u64" }),
-    new Address(params.developer).toScVal(),
-    nativeToScVal(Buffer.from(params.submissionHash), { type: "bytes" }),
-  ]);
-}
-
-/** Creator-only actions that take just the bounty id. */
-export async function buildCreatorAction(
-  method: "approve_bounty" | "refund_bounty" | "cancel_bounty",
-  params: { creator: string; escrowId: number },
-): Promise<string> {
-  return buildInvoke(params.creator, method, [
-    nativeToScVal(params.escrowId, { type: "u64" }),
-  ]);
+  return buildInvoke(
+    params.contractId,
+    params.source,
+    METHOD_FOR[params.args.action],
+    encodeArgs(params.args, params.source, params.escrowId),
+  );
 }
 
 /**
@@ -183,12 +186,12 @@ export async function submitSigned(
   };
 }
 
-async function simulateRead(method: string, args: xdr.ScVal[] = []): Promise<unknown> {
+async function simulateRead(contractId: string, method: string, args: xdr.ScVal[] = []): Promise<unknown> {
   const tx = new TransactionBuilder(new Account(READ_SOURCE, "0"), {
     fee: BASE_FEE,
     networkPassphrase: CONFIG.networkPassphrase,
   })
-    .addOperation(contract().call(method, ...args))
+    .addOperation(contract(contractId).call(method, ...args))
     .setTimeout(60)
     .build();
   const sim = await server.simulateTransaction(tx);
@@ -208,9 +211,12 @@ export interface OnchainBounty {
 }
 
 /** Read on-chain bounty state via simulation (no signature needed). */
-export async function readBounty(escrowId: number): Promise<OnchainBounty | null> {
+export async function readBounty(
+  escrowId: number,
+  contractId: string = CONFIG.contractId,
+): Promise<OnchainBounty | null> {
   try {
-    const raw = (await simulateRead("get_bounty", [
+    const raw = (await simulateRead(contractId, "get_bounty", [
       nativeToScVal(escrowId, { type: "u64" }),
     ])) as Record<string, unknown> | undefined;
     if (!raw) return null;
@@ -230,7 +236,7 @@ export async function readBounty(escrowId: number): Promise<OnchainBounty | null
 
 export async function readNextId(): Promise<number | null> {
   try {
-    const v = await simulateRead("next_id");
+    const v = await simulateRead(CONFIG.contractId, "next_id");
     return v === undefined ? null : Number(v);
   } catch {
     return null;
@@ -240,4 +246,14 @@ export async function readNextId(): Promise<number | null> {
 export async function latestLedger(): Promise<number> {
   const { sequence } = await server.getLatestLedger();
   return sequence;
+}
+
+/** v0.2 pause switch; null when unreadable or on a contract without it. */
+export async function readPaused(): Promise<boolean | null> {
+  try {
+    const v = await simulateRead(CONFIG.contractId, "is_paused");
+    return typeof v === "boolean" ? v : null;
+  } catch {
+    return null;
+  }
 }

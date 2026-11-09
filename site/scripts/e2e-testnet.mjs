@@ -9,8 +9,14 @@
 // would. Walks create -> claim -> submit -> approve through the app's own API,
 // checks the contract state after each step, and checks that the API refuses
 // actions the contract would reject. Uses testnet XLM only.
+//
+// Scenario 2 covers the v0.2 calls: release a claim, re-claim, extend the
+// deadline, submit, dispute. With ADMIN_SECRET set (the contract admin key)
+// it also resolves the dispute on-chain and checks the app syncs it on read.
 
-import { Keypair, TransactionBuilder, Networks } from "@stellar/stellar-sdk";
+import {
+  Keypair, TransactionBuilder, Networks, rpc, Contract, BASE_FEE, nativeToScVal,
+} from "@stellar/stellar-sdk";
 import assert from "node:assert/strict";
 
 const BASE = process.env.BASE || "http://localhost:3000";
@@ -58,19 +64,32 @@ const chain = await api("/api/chain");
 assert.equal(chain.status, 200, "chain endpoint");
 log(`ledger ${chain.body.latestLedger}, next escrow id ${chain.body.nextId}`);
 
-const created = await api("/api/bounties", {
-  title: "E2E: lifecycle smoke test",
-  description: "Automated end-to-end check of the escrow lifecycle.",
-  requirements: "- none",
-  acceptanceCriteria: "- script passes",
-  githubRepository: "rylsherdamz-rgb/stellar-forge",
-  tech: ["E2E"],
-  rewardAmount: REWARD,
-  deadlineLedger: chain.body.latestLedger + 17280,
-  creator: creator.publicKey(),
-});
-assert.equal(created.status, 201, JSON.stringify(created.body));
-const id = created.body.bounty.id;
+async function newBounty(title) {
+  const r = await api("/api/bounties", {
+    title,
+    description: "Automated end-to-end check of the escrow lifecycle.",
+    requirements: "- none",
+    acceptanceCriteria: "- script passes",
+    githubRepository: "rylsherdamz-rgb/stellar-forge",
+    tech: ["E2E"],
+    rewardAmount: REWARD,
+    deadlineLedger: chain.body.latestLedger + 17280,
+    creator: creator.publicKey(),
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  return r.body.bounty.id;
+}
+
+async function step(id, action, kp, extra, expected) {
+  const r = await act(id, action, kp, extra);
+  assert.equal(r.status, 200, `${action}: ${JSON.stringify(r.body)}`);
+  if (expected) assert.equal(r.body.bounty.status, expected, action);
+  log(`${action.padEnd(7)} ✓ ${String(r.body.bounty.status).padEnd(9)} on-chain=${r.body.bounty.onchainStatus ?? "?"} tx ${r.body.txHash}`);
+  return r.body.bounty;
+}
+
+console.log("\n— scenario 1: happy path —");
+const id = await newBounty("E2E: lifecycle smoke test");
 log(`metadata saved as ${id}`);
 
 // Unfunded drafts stay off the public list.
@@ -99,10 +118,7 @@ for (const [action, kp, extra, expected] of steps) {
     assert.equal(devApprove.status, 409, "developer must not be able to approve");
     log(`  refused developer approve: ${devApprove.body.error}`);
   }
-  const r = await act(id, action, kp, extra);
-  assert.equal(r.status, 200, `${action}: ${JSON.stringify(r.body)}`);
-  assert.equal(r.body.bounty.status, expected);
-  log(`${action.padEnd(7)} ✓ ${expected.padEnd(9)} on-chain=${r.body.bounty.onchainStatus ?? "?"} tx ${r.body.txHash}`);
+  await step(id, action, kp, extra, expected);
 }
 
 const final = (await api(`/api/bounties/${id}`)).body.bounty;
@@ -111,3 +127,49 @@ assert.equal(final.claimedBy, dev.publicKey());
 assert.equal(typeof final.escrowId, "number");
 log(`done: escrow #${final.escrowId} paid ${REWARD} XLM to ${dev.publicKey().slice(0, 6)}…`);
 console.log(JSON.stringify({ bountyId: id, escrowId: final.escrowId, tx: final.tx }, null, 2));
+
+console.log("\n— scenario 2: v0.2 calls (release, extend, dispute) —");
+const id2 = await newBounty("E2E: release, extend and dispute");
+const funded = await step(id2, "create", creator, {}, "OPEN");
+assert.equal(funded.contractId, chain.body.contractId, "new escrows go to the configured contract");
+await step(id2, "claim", dev, {}, "CLAIMED");
+const released = await step(id2, "unclaim", dev, {}, "OPEN");
+assert.equal(released.claimedBy, null, "release clears the developer");
+await step(id2, "claim", dev, {}, "CLAIMED");
+const before = released.deadlineLedger;
+const extended = await step(id2, "extend", creator, { extendDays: 2 }, "CLAIMED");
+assert.ok(extended.deadlineLedger > before, "deadline moved later (read back from the contract)");
+log(`  deadline ${before} -> ${extended.deadlineLedger}`);
+const devExtend = await api(`/api/bounties/${id2}/build`, { action: "extend", address: dev.publicKey(), extendDays: 1 });
+assert.equal(devExtend.status, 409, "developer must not extend");
+await step(id2, "submit", dev, { githubPrUrl: "https://github.com/rylsherdamz-rgb/stellar-forge/pull/33" }, "SUBMITTED");
+await step(id2, "dispute", dev, {}, "DISPUTED");
+const lockedApprove = await api(`/api/bounties/${id2}/build`, { action: "approve", address: creator.publicKey() });
+assert.equal(lockedApprove.status, 409, "approve is locked during a dispute");
+log(`  refused approve during dispute: ${lockedApprove.body.error}`);
+
+if (process.env.ADMIN_SECRET) {
+  const admin = Keypair.fromSecret(process.env.ADMIN_SECRET);
+  const server = new rpc.Server(process.env.RPC_URL || "https://soroban-testnet.stellar.org");
+  const escrowId = (await api(`/api/bounties/${id2}`)).body.bounty.escrowId;
+  const tx = new TransactionBuilder(await server.getAccount(admin.publicKey()), { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+    .addOperation(new Contract(chain.body.contractId).call("resolve_dispute", nativeToScVal(escrowId, { type: "u64" }), nativeToScVal(true)))
+    .setTimeout(120).build();
+  const prepared = await server.prepareTransaction(tx);
+  prepared.sign(admin);
+  const sent = await server.sendTransaction(prepared);
+  let got = await server.getTransaction(sent.hash);
+  for (let i = 0; got.status === "NOT_FOUND" && i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    got = await server.getTransaction(sent.hash);
+  }
+  assert.equal(got.status, "SUCCESS", "resolve_dispute");
+  log(`resolve ✓ admin paid the developer directly on-chain, tx ${sent.hash}`);
+  // Nothing told the app; reading the bounty must pick it up from the chain.
+  const synced = (await api(`/api/bounties/${id2}`)).body.bounty;
+  assert.equal(synced.status, "COMPLETED", "app syncs out-of-band changes on read");
+  log("  app picked up the resolution on read: COMPLETED");
+} else {
+  log("ADMIN_SECRET not set: skipping on-chain dispute resolution");
+}
+console.log("\nall scenarios passed");

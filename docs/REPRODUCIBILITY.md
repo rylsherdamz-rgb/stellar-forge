@@ -35,7 +35,9 @@ stellar contract invoke --id <CONTRACT_ID> --source <name> --network testnet \
 
 The reference deployment (already live) is recorded in
 [`data/deployments/testnet.json`](../data/deployments/testnet.json):
-`CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU`.
+`CAPDV2E543F5SHZJ4X5NOY4QQ6O5UDELLNHRBZG7HZCCEPBEVTYZRJOZ` (v0.2; the earlier v0.1 deployment
+`CCUG6LFKZLTYX7R2KVHAT5ZGWT54CZFJ5SMEYMSUPMLPHASYOWONLKZU` stays readable). `node site/scripts/deploy-testnet.mjs`
+reproduces the deployment with the JS SDK alone.
 
 ## 2. Packages — verification units
 
