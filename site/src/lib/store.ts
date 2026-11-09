@@ -10,13 +10,10 @@
 import { promises as fs } from "fs";
 import path from "path";
 
-export type BountyStatus =
-  | "OPEN"
-  | "CLAIMED"
-  | "SUBMITTED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "REFUNDED";
+import type { BountyStatus } from "./lifecycle";
+import { DEMO_BOUNTIES } from "./seed";
+
+export type { BountyStatus };
 
 export interface Submission {
   githubPrUrl: string;
@@ -43,6 +40,10 @@ export interface Bounty {
   asset: "XLM";
   deadlineLedger: number | null;
   status: BountyStatus;
+  /** Last status read from the contract, when available. */
+  onchainStatus?: string;
+  /** Sample listing shipped with the app; never escrowed on-chain. */
+  demo?: boolean;
   creator: string; // wallet address
   claimedBy: string | null;
   submission: Submission | null;
@@ -67,7 +68,9 @@ async function readAll(): Promise<Bounty[]> {
     const raw = await fs.readFile(DATA_FILE, "utf8");
     return JSON.parse(raw) as Bounty[];
   } catch {
-    return [];
+    // Fresh checkout: show labelled sample listings so the marketplace is not
+    // empty. Set FORGE_DEMO_SEED=0 to start with no listings.
+    return process.env.FORGE_DEMO_SEED === "0" ? [] : structuredClone(DEMO_BOUNTIES);
   }
 }
 

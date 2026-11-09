@@ -29,6 +29,8 @@
 - [x] Forge Vault contract: milestone escrow, 9/9 tests, WASM 21,562 B
 - [x] Testnet deployment evidence: vault live at CB2JGINPQP6DSWEY6N5XOWOSVOW6IPCNLSM2AQWVKP3LTVSQ3SQSHKFZ, `total_committed` invoke verified via public RPC
 - [x] x402 + MPP + contract-state suites green against live backend + testnet RPC (3/3)
+- [x] Web app escrow lifecycle verified end to end on testnet (2026-11-09)
+- [ ] Deploy bounty-escrow v0.2 to testnet (live contract is still v0.1)
 - [ ] Mainnet reference dApp
 - [ ] SCF Build Award submission
 
@@ -52,6 +54,8 @@
 | Vault on-chain | invoke total_committed via stellar CLI, testnet | returns "0" (read-only, verified) |
 | Promo video | media/promo.mp4 | exists |
 | Instaward SOW | docs/INSTAWARD-SOW.md | drafted |
+| Web app lifecycle on testnet | site/scripts/e2e-testnet.mjs — create/claim/submit/approve via app API | pass 2026-11-09, escrow #1: create 49c69ca5…, claim ae0f25c0…, submit 4429006f…, approve 792f75a6… |
+| Site unit tests | site/test (lifecycle, errors, validation, hashes) | 11/11 pass 2026-11-09 |
 
 ## Next Actions
 

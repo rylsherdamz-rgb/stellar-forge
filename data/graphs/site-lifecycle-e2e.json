@@ -1,0 +1,21 @@
+{
+  "task": "site-lifecycle-e2e",
+  "status": "complete",
+  "waves": [
+    {"wave": 1, "mode": "parallel", "nodes": ["api", "ui", "client-test-fix"]},
+    {"wave": 2, "mode": "sequential", "nodes": ["testnet-e2e"]},
+    {"wave": 3, "mode": "parallel", "nodes": ["ops"]}
+  ],
+  "nodes": {
+    "api":             {"agent": "stellar-frontend", "status": "verified", "retries": 1, "paths": ["site/src/app/api/", "site/src/lib/"], "verifier": "evals/02-frontend-eval.md", "contract": "add /build route; /confirm derives ids + status from tx and chain; SDK 13 -> 17", "delta": {"routes": ["/api/bounties/[id]/build"], "stellar_sdk": "17.3"}},
+    "ui":              {"agent": "stellar-frontend", "status": "verified", "retries": 0, "paths": ["site/src/app/(marketplace)/", "site/src/components/"], "verifier": "evals/02-frontend-eval.md", "contract": "single shell, lifecycle stepper, role-aware actions, filters+search, create preview, PR pre-check", "delta": {}},
+    "client-test-fix": {"agent": "stellar-frontend", "status": "verified", "retries": 0, "paths": ["packages/stellar/test/"], "verifier": "evals/02-frontend-eval.md", "contract": "decode XdrString function names (sdk >=14)", "delta": {"tests": 24}},
+    "testnet-e2e":     {"agent": "stellar-ops", "status": "verified", "retries": 1, "paths": ["site/scripts/"], "verifier": "evals/04-e2e-eval.md", "contract": "create->claim->submit->approve through the app API on testnet", "delta": {"escrow_ids": [0, 1], "retry_reason": "on-chain Status is a u32 discriminant"}},
+    "ops":             {"agent": "stellar-ops", "status": "verified", "retries": 0, "paths": [".github/workflows/"], "verifier": "evals/04-e2e-eval.md", "contract": "CI runs site lint + unit tests", "delta": {}}
+  },
+  "edges": [
+    {"from": "api", "to": "testnet-e2e", "type": "sequential", "data": "build/confirm endpoints"},
+    {"from": "ui", "to": "testnet-e2e", "type": "parallel", "data": "screens for review"},
+    {"from": "testnet-e2e", "to": "ops", "type": "sequential", "data": "test commands"}
+  ]
+}

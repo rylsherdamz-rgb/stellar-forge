@@ -28,7 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
         {children}
-        <Analytics />
+        {/* Vercel Analytics only exists when deployed on Vercel. */}
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );

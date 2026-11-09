@@ -20,3 +20,33 @@ export function toHex(bytes: Uint8Array): string {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+/**
+ * Commitment to the off-chain bounty description, stored on-chain as
+ * `metadata_hash`. Anyone can recompute it from the metadata record to check
+ * the description was not edited after funding.
+ */
+export async function metadataHash(b: {
+  title: string;
+  description: string;
+  requirements: string;
+  acceptanceCriteria: string;
+  githubRepository: string;
+  rewardAmount: string;
+}): Promise<Uint8Array> {
+  return sha256Bytes(
+    JSON.stringify([
+      b.title,
+      b.description,
+      b.requirements,
+      b.acceptanceCriteria,
+      b.githubRepository,
+      b.rewardAmount,
+    ]),
+  );
+}
+
+/** Commitment to a submission (`submission_hash`): PR url + optional commit. */
+export async function submissionHash(prUrl: string, commitHash?: string): Promise<Uint8Array> {
+  return sha256Bytes(`${prUrl.trim()}\n${(commitHash ?? "").trim()}`);
+}

@@ -1,7 +1,7 @@
 import Shell from "@/components/Shell";
 
-// Applies the marketplace chrome (wallet nav + footer) to /bounties and /create
-// only. The marketing landing page at "/" keeps its own layout untouched.
+// One shell (wallet provider + nav + footer) for every page, so the connected
+// wallet survives client-side navigation.
 export default function MarketplaceLayout({
   children,
 }: {

@@ -2,362 +2,153 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import BountyCard from "@/components/BountyCard";
+import { useChain } from "@/hooks/useChain";
+import { LEDGERS_PER_DAY } from "@/lib/lifecycle";
 import type { Bounty } from "@/lib/store";
 
-const DAY_LEDGERS = 17280;
+const REWARD_RANGES: Record<string, [number, number]> = {
+  "under-10": [0, 10],
+  "10-25": [10, 25],
+  "25-50": [25, 50],
+  "50-plus": [50, Infinity],
+};
+const DEADLINE_DAYS: Record<string, number> = { "1-day": 1, "3-days": 3, "7-days": 7, "30-days": 30 };
+const STATUSES = ["OPEN", "CLAIMED", "SUBMITTED", "COMPLETED", "CANCELLED", "REFUNDED"];
+
+const INITIAL = { q: "", tech: "all", asset: "all", status: "all", reward: "all", deadline: "all", sort: "newest" };
 
 export default function BountiesPage() {
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [loading, setLoading] = useState(true);
-  const [latestLedger, setLatestLedger] = useState<number | null>(null);
-
-  const [techFilter, setTechFilter] = useState("all");
-  const [assetFilter, setAssetFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [rewardFilter, setRewardFilter] = useState("all");
-  const [deadlineFilter, setDeadlineFilter] = useState("all");
+  const [f, setF] = useState(INITIAL);
+  const { chain } = useChain();
+  const ledger = chain?.latestLedger ?? null;
+  const set = (k: keyof typeof INITIAL, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/bounties").then((r) => r.json()),
-      fetch("/api/chain").then((r) => r.json()),
-    ])
-      .then(([bountyData, chainData]) => {
-        setBounties(bountyData.bounties || []);
-        setLatestLedger(Number(chainData.latestLedger));
-      })
+    fetch("/api/bounties")
+      .then((r) => r.json())
+      .then((d) => setBounties(d.bounties || []))
+      .catch(() => setBounties([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const techOptions = useMemo(() => {
-    const values = new Set<string>();
+  const techOptions = useMemo(
+    () => Array.from(new Set(bounties.flatMap((b) => (b.tech ?? []).map((t) => t.trim())).filter(Boolean))).sort(),
+    [bounties],
+  );
+  const assetOptions = useMemo(() => Array.from(new Set(bounties.map((b) => b.asset))).sort(), [bounties]);
 
-    for (const bounty of bounties) {
-      for (const tech of bounty.tech ?? []) {
-        if (tech.trim()) {
-          values.add(tech.trim());
+  const filtered = useMemo(() => {
+    const q = f.q.trim().toLowerCase();
+    const list = bounties.filter((b) => {
+      if (q && ![b.title, b.description, b.githubRepository, ...(b.tech ?? [])].some((s) => s.toLowerCase().includes(q))) return false;
+      if (f.tech !== "all" && !(b.tech ?? []).some((t) => t.toLowerCase() === f.tech.toLowerCase())) return false;
+      if (f.asset !== "all" && b.asset !== f.asset) return false;
+      if (f.status !== "all" && b.status !== f.status) return false;
+      if (f.reward !== "all") {
+        const [lo, hi] = REWARD_RANGES[f.reward];
+        const r = Number(b.rewardAmount);
+        if (r < lo || r >= hi) return false;
+      }
+      if (f.deadline !== "all") {
+        // Unknown ledger: don't hide everything, just skip the filter.
+        if (ledger != null) {
+          if (b.deadlineLedger == null) return false;
+          const days = (b.deadlineLedger - ledger) / LEDGERS_PER_DAY;
+          if (days < 0 || days > DEADLINE_DAYS[f.deadline]) return false;
         }
       }
-    }
-
-    return Array.from(values).sort();
-  }, [bounties]);
-
-  const filteredBounties = useMemo(() => {
-    return bounties.filter((bounty) => {
-      // Technology filter
-      if (
-        techFilter !== "all" &&
-        !(bounty.tech ?? []).some(
-          (tech) => tech.toLowerCase() === techFilter.toLowerCase(),
-        )
-      ) {
-        return false;
-      }
-
-      // Asset filter
-      if (assetFilter !== "all" && bounty.asset !== assetFilter) {
-        return false;
-      }
-
-      // Status filter
-      if (statusFilter !== "all" && bounty.status !== statusFilter) {
-        return false;
-      }
-
-      // Reward filter
-      const reward = Number(bounty.rewardAmount);
-
-      if (rewardFilter === "under-10" && reward >= 10) {
-        return false;
-      }
-
-      if (rewardFilter === "10-25" && (reward < 10 || reward >= 25)) {
-        return false;
-      }
-
-      if (rewardFilter === "25-50" && (reward < 25 || reward >= 50)) {
-        return false;
-      }
-
-      if (rewardFilter === "50-plus" && reward < 50) {
-        return false;
-      }
-
-      // Deadline filter
-      if (deadlineFilter !== "all") {
-        if (latestLedger === null || bounty.deadlineLedger === null) {
-          return false;
-        }
-
-        const remainingLedgers =
-          bounty.deadlineLedger - latestLedger;
-
-        const remainingDays = remainingLedgers / DAY_LEDGERS;
-
-        if (
-          deadlineFilter === "1-day" &&
-          (remainingDays < 0 || remainingDays > 1)
-        ) {
-          return false;
-        }
-
-        if (
-          deadlineFilter === "3-days" &&
-          (remainingDays < 0 || remainingDays > 3)
-        ) {
-          return false;
-        }
-
-        if (
-          deadlineFilter === "7-days" &&
-          (remainingDays < 0 || remainingDays > 7)
-        ) {
-          return false;
-        }
-
-        if (
-          deadlineFilter === "30-days" &&
-          (remainingDays < 0 || remainingDays > 30)
-        ) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [
-    bounties,
-    techFilter,
-    assetFilter,
-    statusFilter,
-    rewardFilter,
-    deadlineFilter,
-    latestLedger,
-  ]);
+    const sorters: Record<string, (a: Bounty, b: Bounty) => number> = {
+      newest: (a, b) => b.createdAt.localeCompare(a.createdAt),
+      reward: (a, b) => Number(b.rewardAmount) - Number(a.rewardAmount),
+      deadline: (a, b) => (a.deadlineLedger ?? Infinity) - (b.deadlineLedger ?? Infinity),
+    };
+    return list.sort(sorters[f.sort]);
+  }, [bounties, f, ledger]);
 
-  const hasFilters =
-    techFilter !== "all" ||
-    assetFilter !== "all" ||
-    statusFilter !== "all" ||
-    rewardFilter !== "all" ||
-    deadlineFilter !== "all";
-
-  function clearFilters() {
-    setTechFilter("all");
-    setAssetFilter("all");
-    setStatusFilter("all");
-    setRewardFilter("all");
-    setDeadlineFilter("all");
-  }
+  const hasFilters = Object.entries(f).some(([k, v]) => k !== "sort" && v !== INITIAL[k as keyof typeof INITIAL]);
+  const totalOpen = bounties.filter((b) => b.status === "OPEN").length;
 
   return (
     <section className="block">
       <div className="container">
-        <div className="row-between" style={{ marginBottom: 20 }}>
-          <h2 className="section-title">Bounties</h2>
-
-          <Link href="/create" className="btn btn-primary">
-            Create a Bounty
-          </Link>
+        <div className="row-between section-head">
+          <div>
+            <h1 className="page-title">Bounties</h1>
+            <p className="section-sub">
+              {loading ? "Loading…" : `${totalOpen} open · ${bounties.length} total. Every open bounty is funded in escrow.`}
+            </p>
+          </div>
+          <Link href="/create" className="btn btn-primary">Post a bounty</Link>
         </div>
 
-        {!loading && bounties.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: 12,
-              marginBottom: 24,
-            }}
-          >
-            <div className="field">
-              <label>Technology</label>
-              <select
-                value={techFilter}
-                onChange={(e) => setTechFilter(e.target.value)}
-              >
-                <option value="all">All technologies</option>
-                {techOptions.map((tech) => (
-                  <option key={tech} value={tech}>
-                    {tech}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Reward</label>
-              <select
-                value={rewardFilter}
-                onChange={(e) => setRewardFilter(e.target.value)}
-              >
-                <option value="all">Any reward</option>
-                <option value="under-10">Under 10 XLM</option>
-                <option value="10-25">10–25 XLM</option>
-                <option value="25-50">25–50 XLM</option>
-                <option value="50-plus">50+ XLM</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Asset</label>
-              <select
-                value={assetFilter}
-                onChange={(e) => setAssetFilter(e.target.value)}
-              >
-                <option value="all">All assets</option>
-                <option value="XLM">XLM</option>
-                <option value="USDC">USDC</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Deadline</label>
-              <select
-                value={deadlineFilter}
-                onChange={(e) => setDeadlineFilter(e.target.value)}
-              >
-                <option value="all">Any deadline</option>
-                <option value="1-day">Within 1 day</option>
-                <option value="3-days">Within 3 days</option>
-                <option value="7-days">Within 7 days</option>
-                <option value="30-days">Within 30 days</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All statuses</option>
-                <option value="OPEN">Open</option>
-                <option value="CLAIMED">Claimed</option>
-                <option value="SUBMITTED">Submitted</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-                <option value="REFUNDED">Refunded</option>
-              </select>
-            </div>
+        <div className="filters" role="search">
+          <div className="field search">
+            <label htmlFor="q">Search</label>
+            <input id="q" value={f.q} onChange={(e) => set("q", e.target.value)} placeholder="Title, repo or tech…" />
           </div>
-        )}
+          <Select id="tech" label="Technology" value={f.tech} onChange={(v) => set("tech", v)}
+            options={[["all", "All technologies"], ...techOptions.map((t) => [t, t] as [string, string])]} />
+          <Select id="status" label="Status" value={f.status} onChange={(v) => set("status", v)}
+            options={[["all", "All statuses"], ...STATUSES.map((s) => [s, s[0] + s.slice(1).toLowerCase()] as [string, string])]} />
+          <Select id="reward" label="Reward" value={f.reward} onChange={(v) => set("reward", v)}
+            options={[["all", "Any reward"], ["under-10", "Under 10"], ["10-25", "10–25"], ["25-50", "25–50"], ["50-plus", "50+"]]} />
+          <Select id="deadline" label="Deadline" value={f.deadline} onChange={(v) => set("deadline", v)}
+            options={[["all", "Any deadline"], ["1-day", "Within 1 day"], ["3-days", "Within 3 days"], ["7-days", "Within 7 days"], ["30-days", "Within 30 days"]]} />
+          {assetOptions.length > 1 && (
+            <Select id="asset" label="Asset" value={f.asset} onChange={(v) => set("asset", v)}
+              options={[["all", "All assets"], ...assetOptions.map((a) => [a, a] as [string, string])]} />
+          )}
+          <Select id="sort" label="Sort" value={f.sort} onChange={(v) => set("sort", v)}
+            options={[["newest", "Newest"], ["reward", "Highest reward"], ["deadline", "Ending soonest"]]} />
+        </div>
 
-        {!loading && bounties.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-              gap: 12,
-            }}
-          >
-            <span style={{ color: "var(--text-dim)" }}>
-              Showing {filteredBounties.length} of {bounties.length} bounties
-            </span>
-
-            {hasFilters && (
-              <button
-                className="btn btn-secondary"
-                onClick={clearFilters}
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        )}
+        <div className="results-bar">
+          <span>Showing {filtered.length} of {bounties.length}</span>
+          {hasFilters && (
+            <button className="link-btn" onClick={() => setF({ ...INITIAL, sort: f.sort })}>Clear filters</button>
+          )}
+        </div>
 
         {loading ? (
-          <div className="grid">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton" />
-            ))}
-          </div>
+          <div className="grid">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="skeleton" />)}</div>
         ) : bounties.length === 0 ? (
-          <div className="notice info">
-            No bounties yet.{" "}
-            <Link
-              href="/create"
-              style={{ color: "var(--accent)" }}
-            >
-              Create the first one.
-            </Link>
+          <div className="empty">
+            <p>No bounties yet.</p>
+            <Link href="/create" className="btn btn-primary">Post the first one</Link>
           </div>
-        ) : filteredBounties.length === 0 ? (
-          <div className="notice info">
-            No bounties match the selected filters.
+        ) : filtered.length === 0 ? (
+          <div className="empty">
+            <p>No bounties match these filters.</p>
+            <button className="btn btn-secondary" onClick={() => setF(INITIAL)}>Clear filters</button>
           </div>
         ) : (
           <div className="grid">
-            {filteredBounties.map((b) => (
-              <Link
-                key={b.id}
-                href={`/bounties/${b.id}`}
-                className="card"
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: 10,
-                  }}
-                >
-                  <span className={`status ${b.status}`}>
-                    {b.status}
-                  </span>
-
-                  <span className="reward">
-                    {b.rewardAmount} {b.asset}
-                  </span>
-                </div>
-
-                <h3>{b.title}</h3>
-
-                <p>
-                  {b.description.slice(0, 120)}
-                  {b.description.length > 120 ? "…" : ""}
-                </p>
-
-                {b.tech && b.tech.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      marginTop: 12,
-                    }}
-                  >
-                    {b.tech.map((tech) => (
-                      <span
-                        key={tech}
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                          background: "var(--surface-2)",
-                          color: "var(--text-dim)",
-                          fontSize: 12,
-                        }}
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="meta-row" style={{ marginTop: 12 }}>
-                  <span>◈ {b.githubRepository}</span>
-
-                  {b.escrowId != null && (
-                    <span>escrow #{b.escrowId}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
+            {filtered.map((b) => <BountyCard key={b.id} bounty={b} ledger={ledger} />)}
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+function Select({ id, label, value, onChange, options }: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: [string, string][];
+}) {
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </div>
   );
 }

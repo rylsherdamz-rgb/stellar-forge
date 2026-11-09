@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { listBounties, createBounty } from "@/lib/store";
 
-// GET /api/bounties - public list of bounties
-export async function GET() {
-  const bounties = await listBounties();
+// GET /api/bounties - public list of bounties.
+// Unfunded drafts (metadata saved but create_bounty never confirmed) are only
+// returned to their creator via ?creator=G..., so every public "Open" listing
+// is backed by escrow (or is a labelled sample).
+export async function GET(req: Request) {
+  const creator = new URL(req.url).searchParams.get("creator");
+  const bounties = (await listBounties()).filter(
+    (b) => b.demo || b.escrowId != null || (creator && b.creator === creator),
+  );
   return NextResponse.json({ bounties });
 }
 
@@ -46,11 +52,21 @@ export async function POST(req: Request) {
     );
   }
 
-  if (Number(body.rewardAmount) <= 0) {
+  const reward = String(body.rewardAmount).trim();
+  if (!/^\d+(\.\d{1,7})?$/.test(reward) || Number(reward) <= 0) {
     return NextResponse.json(
-      { error: "rewardAmount must be > 0" },
+      { error: "rewardAmount must be a positive XLM amount with at most 7 decimals" },
       { status: 400 },
     );
+  }
+
+  if (typeof body.creator !== "string" || !/^G[A-Z2-7]{55}$/.test(body.creator)) {
+    return NextResponse.json({ error: "creator must be a Stellar address" }, { status: 400 });
+  }
+
+  const deadlineLedger = Number(body.deadlineLedger);
+  if (!Number.isInteger(deadlineLedger) || deadlineLedger <= 0) {
+    return NextResponse.json({ error: "deadlineLedger is required" }, { status: 400 });
   }
 
   const tech = Array.isArray(body.tech)
@@ -74,9 +90,9 @@ export async function POST(req: Request) {
     acceptanceCriteria: body.acceptanceCriteria,
     githubRepository: body.githubRepository,
     tech,
-    rewardAmount: String(body.rewardAmount),
+    rewardAmount: reward,
     asset: "XLM",
-    deadlineLedger: body.deadlineLedger ?? null,
+    deadlineLedger,
     creator: body.creator,
   });
 

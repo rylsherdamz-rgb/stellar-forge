@@ -1,70 +1,129 @@
 "use client";
 
-import { useState, use } from "react";
+import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/components/WalletProvider";
-import { runAction } from "@/lib/actions";
+import { runAction, PHASE_LABEL, type Phase } from "@/lib/actions";
+import { blockReason } from "@/lib/lifecycle";
+import type { Bounty } from "@/lib/store";
+
+const PR_RE = /^https?:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
+
+type Check = { verified: boolean; reasons: string[]; checks: Record<string, boolean> };
+
+const CHECK_LABEL: Record<string, string> = {
+  exists: "Pull request exists",
+  repoMatches: "Opened in the bounty's repository",
+  authorMatches: "Authored by your GitHub account",
+  merged: "Merged (informational — does not release funds)",
+};
 
 export default function SubmitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { address, connect } = useWallet();
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [bounty, setBounty] = useState<Bounty | null>(null);
+  const [phase, setPhase] = useState<Phase | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<Check | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    githubPrUrl: "",
-    githubLogin: "",
-    description: "",
-    commitHash: "",
-  });
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const [form, setForm] = useState({ githubPrUrl: "", githubLogin: "", description: "", commitHash: "" });
+  const set = (k: keyof typeof form, v: string) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (k === "githubPrUrl" || k === "githubLogin") setCheck(null);
+  };
 
-  async function submit() {
+  useEffect(() => {
+    fetch(`/api/bounties/${id}`).then((r) => r.json()).then((d) => setBounty(d.bounty ?? null));
+  }, [id]);
+
+  async function verify() {
     setError(null);
-    if (!address) { await connect(); return; }
-    if (!/^https?:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/.test(form.githubPrUrl)) {
-      setError("Enter a valid GitHub Pull Request URL");
-      return;
-    }
-    setBusy(true);
+    if (!PR_RE.test(form.githubPrUrl)) return setError("Enter a GitHub pull request URL.");
+    if (!bounty) return;
+    setChecking(true);
     try {
-      await runAction(id, "submit", address, { ...form });
-      router.push(`/bounties/${id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Submission failed");
+      const qs = new URLSearchParams({ prUrl: form.githubPrUrl, repo: bounty.githubRepository, login: form.githubLogin });
+      const r = await fetch(`/api/github/pull-request?${qs}`);
+      setCheck(await r.json());
+    } catch {
+      setError("Could not reach GitHub. You can still submit; the creator will review the PR.");
     } finally {
-      setBusy(false);
+      setChecking(false);
     }
   }
 
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!PR_RE.test(form.githubPrUrl)) return setError("Enter a GitHub pull request URL.");
+    const who = address ?? (await connect());
+    if (!who) return;
+    try {
+      await runAction(id, "submit", who, { ...form }, setPhase);
+      router.push(`/bounties/${id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Submission failed");
+    } finally {
+      setPhase(null);
+    }
+  }
+
+  const blocked = bounty ? (bounty.demo ? "Sample listings cannot receive submissions." : blockReason(bounty, "submit", address)) : null;
+
   return (
     <section className="block">
-      <div className="container" style={{ maxWidth: 560 }}>
-        <h2 className="section-title">Submit proof of work</h2>
-        <p style={{ color: "var(--text-dim)", marginTop: -10 }}>
-          Submit your Pull Request as proof. Forge verifies the repo and author,
-          then records the submission on-chain for the creator to review.
-        </p>
-        {error && <div className="notice err">{error}</div>}
-        <div className="field">
-          <label>GitHub Pull Request URL</label>
-          <input value={form.githubPrUrl} onChange={(e) => set("githubPrUrl", e.target.value)} placeholder="https://github.com/alice/project/pull/42" />
-        </div>
-        <div className="field">
-          <label>Your GitHub username</label>
-          <input value={form.githubLogin} onChange={(e) => set("githubLogin", e.target.value)} placeholder="bob" />
-        </div>
-        <div className="field">
-          <label>Commit hash (optional)</label>
-          <input value={form.commitHash} onChange={(e) => set("commitHash", e.target.value)} />
-        </div>
-        <div className="field">
-          <label>Notes (optional)</label>
-          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} />
-        </div>
-        <button className="btn btn-primary" onClick={submit} disabled={busy}>
-          {busy ? "Submitting…" : address ? "Submit Proof" : "Connect Wallet to Submit"}
-        </button>
+      <div className="container narrow">
+        <Link href={`/bounties/${id}`} className="back">← Back to bounty</Link>
+        <h1 className="page-title">Submit proof of work</h1>
+        {bounty && <p className="section-sub">For <strong>{bounty.title}</strong> · PR must be in <span className="mono">{bounty.githubRepository}</span></p>}
+        {blocked && address && <div className="notice warn">{blocked}</div>}
+        {error && <div className="notice err" role="alert">{error}</div>}
+
+        <form onSubmit={submit} noValidate className="panel">
+          <div className="field">
+            <label htmlFor="pr">Pull request URL</label>
+            <input id="pr" className="mono" value={form.githubPrUrl} onChange={(e) => set("githubPrUrl", e.target.value)} placeholder="https://github.com/alice/project/pull/42" />
+          </div>
+          <div className="two">
+            <div className="field">
+              <label htmlFor="login">GitHub username</label>
+              <input id="login" value={form.githubLogin} onChange={(e) => set("githubLogin", e.target.value)} placeholder="bob" />
+            </div>
+            <div className="field">
+              <label htmlFor="commit">Commit hash <span className="dim">(optional)</span></label>
+              <input id="commit" className="mono" value={form.commitHash} onChange={(e) => set("commitHash", e.target.value)} />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="notes">Notes for the reviewer <span className="dim">(optional)</span></label>
+            <textarea id="notes" value={form.description} onChange={(e) => set("description", e.target.value)} />
+          </div>
+
+          {check && (
+            <ul className="checks" aria-live="polite">
+              {Object.entries(CHECK_LABEL).map(([k, label]) => (
+                <li key={k} className={check.checks?.[k] ? "pass" : k === "merged" ? "info" : "fail"}>
+                  <span>{check.checks?.[k] ? "✓" : k === "merged" ? "–" : "✕"}</span> {label}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={verify} disabled={checking || !!phase}>
+              {checking ? "Checking GitHub…" : "Check PR"}
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={!!phase || (!!blocked && !!address)}>
+              {phase ? PHASE_LABEL[phase] : address ? "Sign & submit" : "Connect wallet to submit"}
+            </button>
+          </div>
+          <p className="small dim">
+            Submitting stores a SHA-256 of the PR URL and commit on-chain. Merging the PR does not
+            release funds — the creator approves separately.
+          </p>
+        </form>
       </div>
     </section>
   );

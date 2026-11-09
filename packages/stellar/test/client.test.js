@@ -39,7 +39,16 @@ function decodeInvoke(op) {
   const ic = typeof func.invokeContract === "function" ? func.invokeContract() : func.invokeContract;
   const name = typeof ic.functionName === "function" ? ic.functionName() : ic.functionName;
   const args = typeof ic.args === "function" ? ic.args() : ic.args;
-  return { functionName: Buffer.from(name).toString("utf8"), args };
+  // Older SDKs return a Buffer/string; js-xdr >=5 (stellar-sdk >=14) returns
+  // an XdrString wrapper whose toString() is the utf8 name. Buffer.from() on
+  // that wrapper yields zero bytes, so stringify it instead.
+  const text =
+    typeof name === "string"
+      ? name
+      : name instanceof Uint8Array
+        ? Buffer.from(name).toString("utf8")
+        : String(name);
+  return { functionName: text, args };
 }
 
 test("BountyEscrowClient initializes with default testnet configurations", () => {
