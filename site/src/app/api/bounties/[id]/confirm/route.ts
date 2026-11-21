@@ -4,6 +4,7 @@ import { submitSigned, readBounty, inspectInvoke, explainContractError } from "@
 import { metadataHash, submissionHash, toHex } from "@/lib/commitments";
 import { verifySubmission } from "@/lib/github";
 import { CONFIG } from "@/lib/config";
+import { sessionAddress } from "@/lib/session";
 
 type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel";
 
@@ -63,6 +64,9 @@ export async function POST(
       { status: 400 },
     );
   }
+  if (sessionAddress(req) !== call.source) {
+    return NextResponse.json({ error: "Sign in with the wallet that signed this transaction" }, { status: 401 });
+  }
   if (action === "create" && (bounty.escrowId != null || bounty.tx.created)) {
     return NextResponse.json({ error: "Bounty is already funded" }, { status: 409 });
   }
@@ -121,6 +125,22 @@ export async function POST(
   // Sync authoritative on-chain state.
   const onchain = escrowId != null ? await readBounty(escrowId) : null;
   if (onchain) {
+    // The PR link we store must be the one the developer committed on-chain.
+    if (
+      action === "submit" &&
+      patch.submission &&
+      onchain.submissionHash &&
+      onchain.submissionHash !== patch.submission.submissionHash
+    ) {
+      patch.submission = {
+        ...patch.submission,
+        verified: false,
+        verifyReasons: [
+          ...(patch.submission.verifyReasons ?? []),
+          "Submitted PR link does not match the on-chain submission hash",
+        ],
+      };
+    }
     patch.status = onchain.status;
     patch.onchainStatus = onchain.status;
     patch.claimedBy = onchain.developer;

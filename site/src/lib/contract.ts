@@ -158,6 +158,8 @@ export interface OnchainBounty {
   amount: bigint;
   deadline: number;
   status: OnchainStatus;
+  metadataHash: string | null; // hex
+  submissionHash: string | null; // hex
 }
 
 /** Read on-chain bounty state via simulation (no signature needed). */
@@ -176,6 +178,10 @@ export async function readBounty(escrowId: number): Promise<OnchainBounty | null
       amount: BigInt(raw.amount as bigint | number),
       deadline: Number(raw.deadline),
       status: ONCHAIN_STATUS[statusIdx] ?? "OPEN",
+      metadataHash: raw.metadata_hash ? Buffer.from(raw.metadata_hash as Uint8Array).toString("hex") : null,
+      submissionHash: raw.submission_hash
+        ? Buffer.from(raw.submission_hash as Uint8Array).toString("hex")
+        : null,
     };
   } catch {
     return null;
