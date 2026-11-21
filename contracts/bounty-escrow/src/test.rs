@@ -528,10 +528,11 @@ fn reject_emits_reason_hash() {
     let id = submitted(&s);
     let reason = BytesN::from_array(&s.env, &[3u8; 32]);
     s.client.reject_submission(&id, &reason);
-    let expected = SubmissionRejected { id, reason_hash: reason };
+    let expected = SubmissionRejected { id, reason_hash: reason }.to_xdr(&s.env, &s.client.address);
     let all = s.env.events().all();
     let ours = all.filter_by_contract(&s.client.address);
-    assert_eq!(ours.events().last().unwrap(), &expected.to_xdr(&s.env, &s.client.address));
+    // A DeadlineExtended event may follow when the deadline was close.
+    assert!(ours.events().iter().any(|e| e == &expected));
 }
 
 #[test]
@@ -543,6 +544,36 @@ fn reject_after_deadline_rejected() {
         s.client.try_reject_submission(&id, &sub(&s.env)),
         Err(Ok(BountyError::PastDeadline))
     );
+}
+
+#[test]
+fn reject_near_deadline_guarantees_revision_time() {
+    let s = setup();
+    let id = submitted(&s);
+    let deadline = s.client.get_bounty(&id).deadline;
+    // Creator rejects one ledger before the deadline...
+    s.env.ledger().set_sequence_number(deadline - 1);
+    s.client.reject_submission(&id, &BytesN::from_array(&s.env, &[3u8; 32]));
+    let extended = s.client.get_bounty(&id).deadline;
+    assert_eq!(extended, deadline - 1 + DAY_LEDGERS);
+
+    // ...and cannot then refund once the original deadline passes.
+    s.env.ledger().set_sequence_number(deadline + 10);
+    assert_eq!(s.client.try_refund_bounty(&id), Err(Ok(BountyError::BeforeDeadline)));
+
+    // The developer can still resubmit and get paid.
+    s.client.submit_bounty(&id, &s.developer, &sub(&s.env));
+    s.client.approve_bounty(&id);
+    assert_eq!(balance(&s.env, &s.token, &s.developer), 700);
+}
+
+#[test]
+fn reject_with_ample_time_keeps_deadline() {
+    let s = setup();
+    let id = submitted(&s);
+    s.client.extend_deadline(&id, &(1000 + DAY_LEDGERS * 10));
+    s.client.reject_submission(&id, &BytesN::from_array(&s.env, &[3u8; 32]));
+    assert_eq!(s.client.get_bounty(&id).deadline, 1000 + DAY_LEDGERS * 10);
 }
 
 // ---- #35: review window ----

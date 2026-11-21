@@ -330,7 +330,7 @@
                       "symbol": "deadline"
                     },
                     "val": {
-                      "u32": 5000
+                      "u32": 18280
                     }
                   },
                   {
@@ -889,6 +889,32 @@
             ],
             "data": {
               "bytes": "0303030303030303030303030303030303030303030303030303030303030303"
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "bounty"
+              },
+              {
+                "symbol": "deadline"
+              },
+              {
+                "u64": "0"
+              }
+            ],
+            "data": {
+              "u32": 18280
             }
           }
         }

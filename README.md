@@ -90,7 +90,7 @@ Soroban contract that owns the full bounty state machine on-chain.
 | `cancel_bounty(bounty_id)` | creator | Refunds an unclaimed bounty, `Open → Cancelled` |
 | `refund_bounty(bounty_id)` | creator | Refunds an `Open`/`Claimed` bounty after deadline, `→ Refunded` |
 | `extend_deadline(bounty_id, new_deadline)` | creator | Moves the deadline later (never earlier) |
-| `reject_submission(bounty_id, reason_hash)` | creator | `Submitted → Claimed` for a revision (before deadline only) |
+| `reject_submission(bounty_id, reason_hash)` | creator | `Submitted → Claimed` for a revision (before deadline only; pushes the deadline out so the developer has ≥ 1 day to resubmit) |
 | `claim_after_review(bounty_id, developer)` | claiming developer | Paid if the creator stays silent past the review window |
 | `dispute_bounty(bounty_id, caller)` | creator or developer | `Submitted → Disputed`; funds stay locked |
 | `resolve_dispute(bounty_id, pay_developer)` | admin | `Disputed → Completed` (pay dev) or `→ Refunded` |

@@ -37,6 +37,8 @@ const TTL_EXTEND_TO: u32 = DAY_LEDGERS * 30;
 const DEFAULT_REVIEW_PERIOD: u32 = DAY_LEDGERS * 7;
 const MIN_REVIEW_PERIOD: u32 = DAY_LEDGERS;
 const MAX_REVIEW_PERIOD: u32 = DAY_LEDGERS * 90;
+/// After a rejection the developer always has at least this long to resubmit.
+const MIN_REVISION_PERIOD: u32 = DAY_LEDGERS;
 /// Hard cap on the platform fee: 10%.
 const MAX_FEE_BPS: u32 = 1_000;
 const BPS_DENOMINATOR: i128 = 10_000;
@@ -516,8 +518,9 @@ impl BountyEscrow {
     }
 
     /// Creator sends a submission back for revision (`Submitted → Claimed`).
-    /// Only before the deadline, so the developer always has time to resubmit;
-    /// after the deadline the creator must approve or dispute.
+    /// Only before the deadline; after it the creator must approve or dispute.
+    /// If less than `MIN_REVISION_PERIOD` remains, the deadline is pushed out
+    /// so the developer always gets a real chance to resubmit.
     pub fn reject_submission(
         env: Env,
         bounty_id: u64,
@@ -528,13 +531,24 @@ impl BountyEscrow {
         if b.status != Status::Submitted {
             return Err(BountyError::NotSubmitted);
         }
-        if b.deadline <= env.ledger().sequence() {
+        let now = env.ledger().sequence();
+        if b.deadline <= now {
             return Err(BountyError::PastDeadline);
         }
         b.status = Status::Claimed;
         b.submission_hash = None;
+        // Guarantee time to revise: otherwise a creator could reject a valid
+        // submission just before the deadline and then refund themselves.
+        let min_deadline = now.saturating_add(MIN_REVISION_PERIOD);
+        let extended = b.deadline < min_deadline;
+        if extended {
+            b.deadline = min_deadline;
+        }
         write_bounty(&env, &b);
         SubmissionRejected { id: bounty_id, reason_hash }.publish(&env);
+        if extended {
+            DeadlineExtended { id: bounty_id, deadline: min_deadline }.publish(&env);
+        }
         Ok(())
     }
 
