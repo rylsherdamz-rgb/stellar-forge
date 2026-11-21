@@ -12,6 +12,7 @@ import { rpc } from "@stellar/stellar-sdk";
 import { CONFIG } from "./config";
 import { decodeEvent, mergeEvents, projectBounty, type IndexedEvent, type RawEvent } from "./events";
 import { listBounties, updateBounty } from "./store";
+import { dbEnabled, getDb } from "./db/client";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "events.json");
@@ -29,6 +30,7 @@ interface IndexState {
 }
 
 async function load(): Promise<IndexState> {
+  if (dbEnabled()) return pgLoad();
   try {
     const s = JSON.parse(await fs.readFile(FILE, "utf8")) as IndexState;
     // A different contract id means a redeploy: start a fresh index.
@@ -40,11 +42,67 @@ async function load(): Promise<IndexState> {
 }
 
 async function save(s: IndexState): Promise<void> {
+  if (dbEnabled()) return pgSave(s);
   await fs.mkdir(DATA_DIR, { recursive: true });
   const tmp = `${FILE}.${process.pid}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(s, null, 2), "utf8");
   await fs.rename(tmp, FILE);
 }
+
+// ---- Postgres backend (contract_events + indexer_state) ----
+
+async function pgLoad(): Promise<IndexState> {
+  const db = await getDb();
+  const [st] = await db.query<{ cursor: string | null; last_ledger: number | null; synced_at: string | Date | null }>(
+    "select cursor, last_ledger, synced_at from indexer_state where contract_id = $1",
+    [CONFIG.contractId],
+  );
+  const rows = await db.query<{
+    id: string; ledger: number; closed_at: string | Date; tx_hash: string; kind: string; escrow_id: string | number;
+    data: IndexedEvent["data"] | string;
+  }>(
+    "select id, ledger, closed_at, tx_hash, kind, escrow_id, data from contract_events where contract_id = $1 order by ledger, id",
+    [CONFIG.contractId],
+  );
+  const iso = (v: string | Date) => (v instanceof Date ? v.toISOString() : new Date(v).toISOString());
+  return {
+    contractId: CONFIG.contractId,
+    cursor: st?.cursor ?? null,
+    lastLedger: st?.last_ledger ?? null,
+    syncedAt: st?.synced_at ? iso(st.synced_at) : null,
+    events: rows.map((r) => ({
+      id: r.id,
+      ledger: r.ledger,
+      closedAt: iso(r.closed_at),
+      txHash: r.tx_hash,
+      kind: r.kind as IndexedEvent["kind"],
+      bountyId: Number(r.escrow_id),
+      data: typeof r.data === "string" ? JSON.parse(r.data) : r.data,
+    })),
+  };
+}
+
+async function pgSave(s: IndexState): Promise<void> {
+  const db = await getDb();
+  await db.tx(async (t) => {
+    for (const e of s.events) {
+      await t.query(
+        `insert into contract_events (id, contract_id, ledger, closed_at, tx_hash, kind, escrow_id, data)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) on conflict (id) do nothing`,
+        [e.id, s.contractId, e.ledger, e.closedAt, e.txHash, e.kind, e.bountyId, JSON.stringify(e.data)],
+      );
+    }
+    await t.query(
+      `insert into indexer_state (contract_id, cursor, last_ledger, synced_at) values ($1,$2,$3,$4)
+       on conflict (contract_id) do update set cursor = excluded.cursor,
+         last_ledger = excluded.last_ledger, synced_at = excluded.synced_at`,
+      [s.contractId, s.cursor, s.lastLedger, s.syncedAt],
+    );
+  });
+}
+
+/** Exposed for tests: storage round-trip without RPC. */
+export const _indexStorage = { load, save };
 
 export async function eventsFor(bountyId: number): Promise<IndexedEvent[]> {
   const s = await load();
