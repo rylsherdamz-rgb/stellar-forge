@@ -7,6 +7,18 @@ import { runAction } from "@/lib/actions";
 import { explorerTx } from "@/lib/config";
 import type { Bounty } from "@/lib/store";
 
+const EVENT_STATUS: Record<string, string> = {
+  created: "OPEN",
+  claimed: "CLAIMED",
+  unclaimed: "OPEN",
+  submitted: "SUBMITTED",
+  completed: "COMPLETED",
+  cancelled: "CANCELLED",
+  refunded: "REFUNDED",
+  disputed: "DISPUTED",
+  deadline: "CLAIMED",
+};
+
 export default function BountyDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { address, connect } = useWallet();
@@ -39,6 +51,12 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
       setReviewing(false);
     }
   }
+
+  type ChainEvent = { id: string; kind: string; ledger: number; closedAt: string; txHash: string; explorer: string; data: Record<string, unknown> };
+  const [events, setEvents] = useState<ChainEvent[]>([]);
+  useEffect(() => {
+    fetch(`/api/bounties/${id}/events`).then((r) => r.json()).then((d) => setEvents(d.events || [])).catch(() => {});
+  }, [id, lastTx]);
 
   const load = () =>
     fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty));
@@ -183,18 +201,39 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
             )}
           </div>
 
-          {(bounty.tx.created || bounty.tx.approved || bounty.tx.refunded) && (
-            <div className="label" style={{ marginTop: 24 }}>On-chain transactions</div>
+          {events.length > 0 ? (
+            <>
+              <div className="label" style={{ marginTop: 24 }}>On-chain history</div>
+              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                {events.map((e) => (
+                  <li key={e.id} style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span className={`status ${EVENT_STATUS[e.kind] ?? "OPEN"}`}>{e.kind}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: "0.82rem" }}>
+                      {new Date(e.closedAt).toLocaleString()} · ledger {e.ledger}
+                    </span>
+                    <a className="tx-link" href={e.explorer} target="_blank" rel="noreferrer">
+                      {e.txHash.slice(0, 12)}…
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            Object.values(bounty.tx).some(Boolean) && (
+              <>
+                <div className="label" style={{ marginTop: 24 }}>On-chain transactions</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {Object.entries(bounty.tx).map(([k, h]) =>
+                    h ? (
+                      <a key={k} className="tx-link" href={explorerTx(h)} target="_blank" rel="noreferrer">
+                        {k}: {h.slice(0, 16)}…
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              </>
+            )
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {Object.entries(bounty.tx).map(([k, h]) =>
-              h ? (
-                <a key={k} className="tx-link" href={explorerTx(h)} target="_blank" rel="noreferrer">
-                  {k}: {h.slice(0, 16)}…
-                </a>
-              ) : null,
-            )}
-          </div>
         </div>
       </div>
     </section>
