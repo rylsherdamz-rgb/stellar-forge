@@ -7,7 +7,7 @@
 # - initialize(admin) with admin address
 # - Allowlist the native XLM SAC (CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC on testnet)
 # - Print a JSON snippet suitable for data/deployments/testnet.json
-# - Idempotent-safe and fails clearly if identity is missing or unreachable
+# - Fails clearly if the identity is missing or unreachable (each run deploys a NEW instance)
 
 set -euo pipefail
 
@@ -28,6 +28,11 @@ if [ -z "$IDENTITY" ]; then
   echo "Example: ./scripts/deploy-bounty-escrow.sh alice testnet"
   exit 1
 fi
+
+case "$NETWORK" in
+  testnet|mainnet) ;;
+  *) echo "ERROR: network must be 'testnet' or 'mainnet' (got '${NETWORK}')."; exit 1 ;;
+esac
 
 echo "--> Verifying Stellar CLI identity: ${IDENTITY} on network: ${NETWORK}..."
 
@@ -66,9 +71,10 @@ DEPLOY_OUTPUT=$(stellar contract deploy \
   --source "$IDENTITY" \
   --network "$NETWORK" 2>&1)
 
-CONTRACT_ID=$(echo "$DEPLOY_OUTPUT" | tail -1 | tr -d '[:space:]')
+# The CLI prints progress lines too; take the last strkey-shaped contract id.
+CONTRACT_ID=$(echo "$DEPLOY_OUTPUT" | grep -Eo '\bC[A-Z2-7]{55}\b' | tail -1 || true)
 
-if [ -z "$CONTRACT_ID" ] || [ "${#CONTRACT_ID}" -lt 10 ]; then
+if [ -z "$CONTRACT_ID" ]; then
   echo "ERROR: Contract deployment failed. Output:"
   echo "$DEPLOY_OUTPUT"
   exit 1

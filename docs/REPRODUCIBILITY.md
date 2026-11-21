@@ -17,7 +17,7 @@ environment, validated on Stellar Testnet. It satisfies the Instaward SOW
 
 ### Option A: Automated Reproducible Deploy Script (Recommended)
 
-Run the automated deployment script to build the release WASM, deploy with a named Stellar CLI identity, initialize the contract, and allowlist the native XLM SAC in one idempotent step:
+Run the automated deployment script to build the release WASM, deploy with a named Stellar CLI identity, initialize the contract, and allowlist the native XLM SAC in one step (each run deploys a new contract instance):
 
 ```bash
 ./scripts/deploy-bounty-escrow.sh <identity-name> [testnet|mainnet]
