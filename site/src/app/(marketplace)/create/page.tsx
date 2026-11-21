@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/components/WalletProvider";
 import { runAction } from "@/lib/actions";
@@ -24,6 +24,50 @@ export default function CreatePage() {
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Advisory AI drafting: fills the form, the creator edits and decides.
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [idea, setIdea] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/ai/status").then((r) => r.json()).then((d) => setAiEnabled(!!d.enabled)).catch(() => {});
+  }, []);
+
+  async function draftWithAi() {
+    setError(null);
+    setAiNote(null);
+    if (!address) { await connect(); return; }
+    setDrafting(true);
+    try {
+      const res = await fetch("/api/ai/generate-bounty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idea,
+          githubRepository: form.githubRepository || undefined,
+          budgetXlm: form.rewardAmount || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Assistant failed");
+      const d = data.draft;
+      setForm((f) => ({
+        ...f,
+        title: d.title,
+        description: d.description,
+        requirements: d.requirements,
+        acceptanceCriteria: d.acceptanceCriteria,
+        tech: (d.tech || []).join(", "),
+        rewardAmount: f.rewardAmount || String(d.suggestedRewardXlm),
+      }));
+      setAiNote(`Draft filled in. Suggested reward ${d.suggestedRewardXlm} XLM: ${d.rewardRationale} Review every field before funding.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Assistant failed");
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   async function submit() {
     setError(null);
@@ -81,6 +125,25 @@ export default function CreatePage() {
           the bounty is funded on creation.
         </p>
 
+        {aiEnabled && (
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="field" style={{ marginBottom: 10 }}>
+              <label>Describe the task (optional AI draft)</label>
+              <textarea
+                value={idea}
+                onChange={(e) => setIdea(e.target.value)}
+                placeholder="The mobile nav menu doesn't close after tapping a link on iOS Safari. Fix it and add a test."
+              />
+            </div>
+            <button className="btn btn-secondary" onClick={draftWithAi} disabled={drafting || idea.trim().length < 15}>
+              {drafting ? "Drafting…" : "Draft with AI"}
+            </button>
+            <small style={{ display: "block", color: "var(--text-dim)", marginTop: 8 }}>
+              The assistant only suggests text. You set the final terms and reward, and only your wallet signature funds the escrow.
+            </small>
+          </div>
+        )}
+        {aiNote && <div className="notice ok">{aiNote}</div>}
         {error && <div className="notice err">{error}</div>}
 
         <div className="field">

@@ -15,6 +15,31 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
 
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  useEffect(() => {
+    fetch("/api/ai/status").then((r) => r.json()).then((d) => setAiEnabled(!!d.enabled)).catch(() => {});
+  }, []);
+
+  async function aiReview(refresh = false) {
+    setError(null);
+    setReviewing(true);
+    try {
+      const res = await fetch("/api/ai/analyze-submission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bountyId: id, refresh }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Review failed");
+      setBounty((b) => (b ? { ...b, aiReview: data.review } : b));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Review failed");
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   const load = () =>
     fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty));
 
@@ -81,6 +106,43 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
                 </div>
               )}
             </>
+          )}
+
+          {bounty.submission && isCreator && aiEnabled && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <strong>AI first-pass review</strong>
+                <button className="btn btn-secondary" onClick={() => aiReview(!!bounty.aiReview)} disabled={reviewing}>
+                  {reviewing ? "Reviewing…" : bounty.aiReview ? "Re-run" : "Review against criteria"}
+                </button>
+              </div>
+              {bounty.aiReview && bounty.aiReview.prUrl === bounty.submission.githubPrUrl && (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ margin: "0 0 8px" }}>
+                    <span className={`status ${bounty.aiReview.verdict === "likely_meets" ? "COMPLETED" : bounty.aiReview.verdict === "unclear" ? "CLAIMED" : "DISPUTED"}`}>
+                      {bounty.aiReview.verdict.replace(/_/g, " ")}
+                    </span>
+                  </p>
+                  <p style={{ margin: "0 0 10px" }}>{bounty.aiReview.summary}</p>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {bounty.aiReview.criteria.map((c, i) => (
+                      <li key={i} style={{ marginBottom: 4 }}>
+                        <strong>{c.status === "met" ? "✓" : c.status === "not_met" ? "✗" : "?"}</strong> {c.criterion}
+                        <span style={{ color: "var(--text-dim)" }}> - {c.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {bounty.aiReview.concerns.length > 0 && (
+                    <div className="notice err" style={{ marginBottom: 0 }}>
+                      {bounty.aiReview.concerns.join(" · ")}
+                    </div>
+                  )}
+                </div>
+              )}
+              <small style={{ display: "block", color: "var(--text-dim)", marginTop: 10 }}>
+                Advisory only. The assistant cannot approve or pay; you decide, and only your signature releases funds.
+              </small>
+            </div>
           )}
 
           {error && <div className="notice err">{error}</div>}
