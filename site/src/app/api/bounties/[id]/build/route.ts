@@ -11,6 +11,7 @@ import {
   explainContractError,
 } from "@/lib/contract";
 import { metadataHash, submissionHash } from "@/lib/commitments";
+import { sessionAddress } from "@/lib/session";
 
 const PR_URL = /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+\/?$/;
 
@@ -37,6 +38,9 @@ export async function POST(
   }
 
   const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
+  if (sessionAddress(req) !== address) {
+    return fail("Sign in with this wallet first", 401);
+  }
   const isCreator = address === bounty.creator;
   const escrowId = bounty.escrowId;
 

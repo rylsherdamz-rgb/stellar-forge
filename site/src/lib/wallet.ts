@@ -12,6 +12,15 @@ import {
 import { CONFIG } from "./config";
 
 let kit: StellarWalletsKit | null = null;
+const WALLET_KEY = "sf_wallet_id"; // which wallet app was chosen; never key material
+
+function storedWalletId(): string | null {
+  try {
+    return window.localStorage.getItem(WALLET_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function getKit(): StellarWalletsKit {
   if (!kit) {
@@ -20,7 +29,7 @@ function getKit(): StellarWalletsKit {
         CONFIG.network === "public"
           ? WalletNetwork.PUBLIC
           : WalletNetwork.TESTNET,
-      selectedWalletId: XBULL_ID,
+      selectedWalletId: storedWalletId() || XBULL_ID,
       modules: allowAllModules(),
     });
   }
@@ -34,6 +43,11 @@ export async function connectWallet(): Promise<string> {
       onWalletSelected: async (option) => {
         try {
           k.setWallet(option.id);
+          try {
+            window.localStorage.setItem(WALLET_KEY, option.id);
+          } catch {
+            /* storage unavailable: user just re-picks the wallet next time */
+          }
           const { address } = await k.getAddress();
           resolve(address);
         } catch (e) {
@@ -51,4 +65,17 @@ export async function signXdr(xdr: string): Promise<string> {
     networkPassphrase: CONFIG.networkPassphrase,
   });
   return signedTxXdr;
+}
+
+export async function disconnectWallet(): Promise<void> {
+  try {
+    window.localStorage.removeItem(WALLET_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    await getKit().disconnect();
+  } catch {
+    /* some wallet modules have nothing to disconnect */
+  }
 }
