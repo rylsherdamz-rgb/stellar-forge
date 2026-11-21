@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useCallback, useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useWallet } from "@/components/WalletProvider";
 import { runAction } from "@/lib/actions";
@@ -58,10 +58,13 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
     fetch(`/api/bounties/${id}/events`).then((r) => r.json()).then((d) => setEvents(d.events || [])).catch(() => {});
   }, [id, lastTx]);
 
-  const load = () =>
-    fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty));
+  const load = useCallback(
+    () =>
+      fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty)),
+    [id],
+  );
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   async function act(action: "claim" | "approve" | "refund" | "cancel") {
     setError(null); setLastTx(null);

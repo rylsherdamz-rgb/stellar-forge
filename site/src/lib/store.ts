@@ -4,11 +4,14 @@
 // This store keeps off-chain descriptions and submission records and LINKS them
 // to on-chain state via `escrowId` (the contract bounty id) and tx hashes.
 //
-// Uses a JSON file so the reference implementation is reproducible with zero
-// external services. Swap `readAll`/`writeAll` for Supabase/Postgres later.
+// Backends: Postgres/Supabase when DATABASE_URL is set (db/migrations, lib/db),
+// otherwise a JSON file so the reference implementation runs with zero
+// external services.
 
 import { promises as fs } from "fs";
 import path from "path";
+import { dbEnabled, getDb } from "./db/client";
+import { pgCreate, pgGet, pgList, pgUpdate } from "./db/pg-store";
 
 export type BountyStatus =
   | "OPEN"
@@ -94,11 +97,13 @@ async function writeAll(list: Bounty[]): Promise<void> {
 }
 
 export async function listBounties(): Promise<Bounty[]> {
+  if (dbEnabled()) return pgList(await getDb());
   const all = await readAll();
   return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getBounty(id: string): Promise<Bounty | null> {
+  if (dbEnabled()) return pgGet(await getDb(), id);
   const all = await readAll();
   return all.find((b) => b.id === id) ?? null;
 }
@@ -109,7 +114,6 @@ export async function createBounty(
     "id" | "status" | "claimedBy" | "submission" | "tx" | "createdAt" | "updatedAt"
   >,
 ): Promise<Bounty> {
-  const all = await readAll();
   const now = new Date().toISOString();
   const bounty: Bounty = {
     ...input,
@@ -121,6 +125,8 @@ export async function createBounty(
     createdAt: now,
     updatedAt: now,
   };
+  if (dbEnabled()) return pgCreate(await getDb(), bounty);
+  const all = await readAll();
   all.push(bounty);
   await writeAll(all);
   return bounty;
@@ -130,6 +136,7 @@ export async function updateBounty(
   id: string,
   patch: Partial<Bounty>,
 ): Promise<Bounty | null> {
+  if (dbEnabled()) return pgUpdate(await getDb(), id, patch);
   const all = await readAll();
   const idx = all.findIndex((b) => b.id === id);
   if (idx === -1) return null;
