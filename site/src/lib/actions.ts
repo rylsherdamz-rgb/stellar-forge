@@ -7,7 +7,7 @@ import { signXdr } from "./wallet";
 // this only orchestrates the request/sign/submit steps.
 export async function runAction(
   bountyId: string,
-  action: "create" | "claim" | "submit" | "approve" | "refund" | "cancel",
+  action: "create" | "claim" | "submit" | "approve" | "refund" | "cancel" | "reject" | "claim_review",
   address: string,
   extra: Record<string, unknown> = {},
 ): Promise<{ txHash: string }> {

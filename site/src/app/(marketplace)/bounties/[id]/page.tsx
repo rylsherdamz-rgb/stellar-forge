@@ -16,6 +16,7 @@ const EVENT_STATUS: Record<string, string> = {
   cancelled: "CANCELLED",
   refunded: "REFUNDED",
   disputed: "DISPUTED",
+  rejected: "CLAIMED",
   deadline: "CLAIMED",
 };
 
@@ -58,20 +59,36 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
     fetch(`/api/bounties/${id}/events`).then((r) => r.json()).then((d) => setEvents(d.events || [])).catch(() => {});
   }, [id, lastTx]);
 
+  type Terms = { feeBps: number; reviewPeriod: number; submittedAt: number };
+  const [terms, setTerms] = useState<Terms | null>(null);
+  const [latestLedger, setLatestLedger] = useState<number | null>(null);
+  const [revising, setRevising] = useState(false);
+  const [reason, setReason] = useState("");
+
   const load = useCallback(
     () =>
-      fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty)),
+      fetch(`/api/bounties/${id}?sync=1`)
+        .then((r) => r.json())
+        .then((d) => {
+          setBounty(d.bounty);
+          setTerms(d.terms ?? null);
+          setLatestLedger(d.latestLedger ?? null);
+        }),
     [id],
   );
 
   useEffect(() => { load(); }, [load]);
 
-  async function act(action: "claim" | "approve" | "refund" | "cancel") {
+  async function act(
+    action: "claim" | "approve" | "refund" | "cancel" | "reject" | "claim_review",
+    extra: Record<string, unknown> = {},
+  ) {
     setError(null); setLastTx(null);
     if (!address) { await connect(); return; }
     setBusy(true);
     try {
-      const { txHash } = await runAction(id, action, address);
+      const { txHash } = await runAction(id, action, address, extra);
+      if (action === "reject") { setRevising(false); setReason(""); }
       setLastTx(txHash);
       await load();
     } catch (e) {
@@ -87,6 +104,23 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
 
   const isCreator = address && address === bounty.creator;
   const isClaimer = address && address === bounty.claimedBy;
+
+  // v0.3 review window: if the creator stays silent, the developer can collect.
+  const reviewOpensAt =
+    terms && terms.submittedAt > 0 ? terms.submittedAt + terms.reviewPeriod : null;
+  const reviewLapsed =
+    reviewOpensAt != null && latestLedger != null && latestLedger >= reviewOpensAt;
+  const hoursLeft =
+    reviewOpensAt != null && latestLedger != null
+      ? Math.max(0, Math.ceil(((reviewOpensAt - latestLedger) * 5) / 3600))
+      : null;
+  const lastRejection = bounty.rejections?.[bounty.rejections.length - 1];
+  const feeNote =
+    terms && terms.feeBps > 0
+      ? `Platform fee ${terms.feeBps / 100}% is withheld on payout; the developer receives ${(
+          Number(bounty.rewardAmount) * (1 - terms.feeBps / 10000)
+        ).toLocaleString(undefined, { maximumFractionDigits: 7 })} XLM.`
+      : null;
 
   return (
     <section className="block">
@@ -176,6 +210,36 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
             </div>
           )}
 
+          {feeNote && <div className="notice info">{feeNote}</div>}
+
+          {bounty.status === "CLAIMED" && lastRejection && (
+            <div className="notice err">
+              <strong>Revision requested</strong> ({new Date(lastRejection.at).toLocaleDateString()}): {lastRejection.reason}
+            </div>
+          )}
+
+          {bounty.status === "SUBMITTED" && reviewOpensAt != null && (
+            <div className="notice info">
+              {reviewLapsed
+                ? "The creator's review window has passed without a response. The developer can collect the reward."
+                : `Creator review window: about ${hoursLeft}h left (until ledger ${reviewOpensAt}). If the creator does not approve, request a revision or dispute by then, the developer can collect the reward.`}
+            </div>
+          )}
+
+          {revising && bounty.status === "SUBMITTED" && isCreator && (
+            <div className="field" style={{ marginTop: 16 }}>
+              <label>What needs to change?</label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="The fix works on Safari but the new test does not cover the iOS breakpoint."
+              />
+              <small style={{ color: "var(--text-dim)" }}>
+                The note is shown to the developer; its hash is recorded on-chain. The developer gets at least one more day to resubmit.
+              </small>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
             {bounty.status === "OPEN" && !isCreator && (
               <button className="btn btn-primary" onClick={() => act("claim")} disabled={busy}>
@@ -190,6 +254,30 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
             {bounty.status === "SUBMITTED" && isCreator && (
               <button className="btn btn-primary" onClick={() => act("approve")} disabled={busy}>
                 {busy ? "Releasing…" : "Approve & Pay"}
+              </button>
+            )}
+            {bounty.status === "SUBMITTED" && isCreator && !revising && (
+              <button className="btn btn-secondary" onClick={() => setRevising(true)} disabled={busy}>
+                Request Revision
+              </button>
+            )}
+            {bounty.status === "SUBMITTED" && isCreator && revising && (
+              <>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => act("reject", { reason })}
+                  disabled={busy || reason.trim().length < 10}
+                >
+                  {busy ? "Sending…" : "Send Back for Revision"}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setRevising(false)} disabled={busy}>
+                  Keep Reviewing
+                </button>
+              </>
+            )}
+            {bounty.status === "SUBMITTED" && isClaimer && reviewLapsed && (
+              <button className="btn btn-primary" onClick={() => act("claim_review")} disabled={busy}>
+                {busy ? "Collecting…" : "Collect Reward"}
               </button>
             )}
             {bounty.status === "OPEN" && isCreator && (

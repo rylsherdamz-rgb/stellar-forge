@@ -27,4 +27,9 @@ export async function submissionHash(prUrl: string, commitHash?: string): Promis
   return sha256Bytes(`${prUrl.trim()}#${(commitHash || "").trim()}`);
 }
 
+/** reason_hash for reject_submission = sha256 of the revision note. */
+export async function reasonHash(reason: string): Promise<Uint8Array> {
+  return sha256Bytes(reason.trim());
+}
+
 export { toHex };

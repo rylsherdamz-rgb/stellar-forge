@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getBounty, updateBounty, type Bounty, type BountyStatus } from "@/lib/store";
 import { submitSigned, readBounty, inspectInvoke, explainContractError } from "@/lib/contract";
-import { metadataHash, submissionHash, toHex } from "@/lib/commitments";
+import { metadataHash, submissionHash, reasonHash, toHex } from "@/lib/commitments";
 import { verifySubmission } from "@/lib/github";
 import { CONFIG } from "@/lib/config";
 import { sessionAddress } from "@/lib/session";
 
-type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel";
+type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel" | "reject" | "claim_review";
 
 const METHOD: Record<Action, string[]> = {
   create: ["create_bounty"],
@@ -15,6 +15,8 @@ const METHOD: Record<Action, string[]> = {
   approve: ["approve_bounty", "release_payment"],
   refund: ["refund_bounty"],
   cancel: ["cancel_bounty"],
+  reject: ["reject_submission"],
+  claim_review: ["claim_after_review"],
 };
 
 // Fallback when the chain can't be read right after the tx lands.
@@ -25,6 +27,8 @@ const STATUS_AFTER: Record<Action, BountyStatus> = {
   approve: "COMPLETED",
   refund: "REFUNDED",
   cancel: "CANCELLED",
+  reject: "CLAIMED",
+  claim_review: "COMPLETED",
 };
 
 const TX_KEY: Record<Action, keyof Bounty["tx"]> = {
@@ -34,6 +38,8 @@ const TX_KEY: Record<Action, keyof Bounty["tx"]> = {
   approve: "approved",
   refund: "refunded",
   cancel: "cancelled",
+  reject: "rejected",
+  claim_review: "approved",
 };
 
 // POST /api/bounties/:id/confirm
@@ -120,6 +126,14 @@ export async function POST(
       verifyReasons,
       submissionHash: toHex(await submissionHash(body.githubPrUrl, body.commitHash)),
     };
+  }
+
+  if (action === "reject") {
+    const reason = String(body.reason || "").trim();
+    patch.rejections = [
+      ...(bounty.rejections ?? []),
+      { reason, reasonHash: toHex(await reasonHash(reason)), txHash: hash, at: new Date().toISOString() },
+    ];
   }
 
   // Sync authoritative on-chain state.

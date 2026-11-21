@@ -74,7 +74,10 @@ export interface Bounty {
     approved?: string;
     refunded?: string;
     cancelled?: string;
+    rejected?: string;
   };
+  /** Revision requests (v0.3 reject_submission), oldest first. */
+  rejections?: { reason: string; reasonHash: string; txHash: string; at: string }[];
   createdAt: string;
   updatedAt: string;
 }
