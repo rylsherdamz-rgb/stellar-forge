@@ -1,12 +1,46 @@
 import { NextResponse } from "next/server";
-import { getBounty, updateBounty, type BountyStatus } from "@/lib/store";
-import { submitSigned, readBounty } from "@/lib/contract";
+import { getBounty, updateBounty, type Bounty, type BountyStatus } from "@/lib/store";
+import { submitSigned, readBounty, inspectInvoke, explainContractError } from "@/lib/contract";
+import { metadataHash, submissionHash, toHex } from "@/lib/commitments";
 import { verifySubmission } from "@/lib/github";
+import { CONFIG } from "@/lib/config";
+
+type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel";
+
+const METHOD: Record<Action, string[]> = {
+  create: ["create_bounty"],
+  claim: ["claim_bounty"],
+  submit: ["submit_bounty"],
+  approve: ["approve_bounty", "release_payment"],
+  refund: ["refund_bounty"],
+  cancel: ["cancel_bounty"],
+};
+
+// Fallback when the chain can't be read right after the tx lands.
+const STATUS_AFTER: Record<Action, BountyStatus> = {
+  create: "OPEN",
+  claim: "CLAIMED",
+  submit: "SUBMITTED",
+  approve: "COMPLETED",
+  refund: "REFUNDED",
+  cancel: "CANCELLED",
+};
+
+const TX_KEY: Record<Action, keyof Bounty["tx"]> = {
+  create: "created",
+  claim: "claimed",
+  submit: "submitted",
+  approve: "approved",
+  refund: "refunded",
+  cancel: "cancelled",
+};
 
 // POST /api/bounties/:id/confirm
 // Body: { action, signedXdr, address, ...meta }
-// Submits the wallet-signed transaction, records the tx hash, syncs on-chain
-// state into the metadata store, and (for submit) verifies the GitHub PR.
+// Relays a wallet-signed transaction, then records the tx hash and syncs the
+// metadata record from the contract. The contract is the source of truth: the
+// stored status is whatever `get_bounty` reports after the tx, not what the
+// client claims happened.
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -15,50 +49,45 @@ export async function POST(
   const bounty = await getBounty(id);
   if (!bounty) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await req.json();
-  const { action, signedXdr } = body;
+  const body = await req.json().catch(() => ({}));
+  const action = body.action as Action;
+  const signedXdr = body.signedXdr as string | undefined;
+  if (!METHOD[action]) return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   if (!signedXdr) return NextResponse.json({ error: "signedXdr required" }, { status: 400 });
 
+  // Only relay a single call to the Forge contract for the declared action.
+  const call = inspectInvoke(signedXdr);
+  if (!call || call.contractId !== CONFIG.contractId || !METHOD[action].includes(call.method)) {
+    return NextResponse.json(
+      { error: "Signed transaction does not match this action" },
+      { status: 400 },
+    );
+  }
+  if (action === "create" && (bounty.escrowId != null || bounty.tx.created)) {
+    return NextResponse.json({ error: "Bounty is already funded" }, { status: 409 });
+  }
+
   let hash: string;
+  let returnValue: unknown;
   try {
-    hash = await submitSigned(signedXdr);
+    ({ hash, returnValue } = await submitSigned(signedXdr));
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Submission failed" },
+      { error: e instanceof Error ? explainContractError(e.message) : "Submission failed" },
       { status: 502 },
     );
   }
 
-  const statusFor: Record<string, BountyStatus> = {
-    create: "OPEN",
-    claim: "CLAIMED",
-    submit: "SUBMITTED",
-    approve: "COMPLETED",
-    refund: "REFUNDED",
-    cancel: "CANCELLED",
-  };
-  const txKey: Record<string, keyof NonNullable<typeof bounty.tx>> = {
-    create: "created",
-    claim: "claimed",
-    submit: "submitted",
-    approve: "approved",
-    refund: "refunded",
-    cancel: "cancelled",
-  };
+  const patch: Partial<Bounty> = { tx: { [TX_KEY[action]]: hash } };
 
-  const patch: Record<string, unknown> = {
-    status: statusFor[action] ?? bounty.status,
-    tx: { [txKey[action]]: hash },
-  };
-
+  let escrowId = bounty.escrowId;
   if (action === "create") {
-    // Link the new on-chain bounty id (escrowId) if provided by the client
-    // (read from the create_bounty return value / next_id).
-    if (typeof body.escrowId === "number") patch.escrowId = body.escrowId;
+    // create_bounty returns the on-chain id; never trust a client-supplied one.
+    if (returnValue != null) escrowId = Number(returnValue);
+    patch.escrowId = escrowId;
+    patch.metadataHash = toHex(await metadataHash(bounty));
   }
-  if (action === "claim") {
-    patch.claimedBy = body.address ?? bounty.creator;
-  }
+
   if (action === "submit") {
     let verified: boolean | undefined;
     let verifyReasons: string[] = [];
@@ -80,20 +109,24 @@ export async function POST(
       githubPrUrl: body.githubPrUrl,
       description: body.description || "",
       commitHash: body.commitHash,
-      developer: body.address,
+      developer: call.source,
       githubLogin: body.githubLogin,
       submittedAt: new Date().toISOString(),
       verified,
       verifyReasons,
+      submissionHash: toHex(await submissionHash(body.githubPrUrl, body.commitHash)),
     };
   }
 
-  // Sync authoritative on-chain state where possible (best-effort).
-  if (bounty.escrowId != null) {
-    const onchain = await readBounty(bounty.escrowId);
-    if (onchain && typeof onchain.status === "string") {
-      patch.onchainStatus = onchain.status;
-    }
+  // Sync authoritative on-chain state.
+  const onchain = escrowId != null ? await readBounty(escrowId) : null;
+  if (onchain) {
+    patch.status = onchain.status;
+    patch.onchainStatus = onchain.status;
+    patch.claimedBy = onchain.developer;
+  } else {
+    patch.status = STATUS_AFTER[action];
+    if (action === "claim") patch.claimedBy = call.source;
   }
 
   const updated = await updateBounty(id, patch);

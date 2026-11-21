@@ -16,7 +16,7 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
   const [lastTx, setLastTx] = useState<string | null>(null);
 
   const load = () =>
-    fetch(`/api/bounties/${id}`).then((r) => r.json()).then((d) => setBounty(d.bounty));
+    fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty));
 
   useEffect(() => { load(); }, [id]);
 

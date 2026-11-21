@@ -61,10 +61,8 @@ export default function CreatePage() {
       const bountyId = createData.bounty.id as string;
 
       // 3. Build + sign + confirm create_bounty (deposits the XLM reward).
-      const { txHash } = await runAction(bountyId, "create", address, {
-        deadlineLedger,
-        escrowId: chain.nextId,
-      });
+      // The on-chain id comes back from create_bounty itself (see confirm route).
+      const { txHash } = await runAction(bountyId, "create", address);
       console.log("Funded on-chain, tx:", txHash);
       router.push(`/bounties/${bountyId}`);
     } catch (e) {

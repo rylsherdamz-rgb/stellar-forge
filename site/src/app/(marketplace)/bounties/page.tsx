@@ -238,6 +238,7 @@ export default function BountiesPage() {
                 <option value="SUBMITTED">Submitted</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
+                <option value="DISPUTED">Disputed</option>
                 <option value="REFUNDED">Refunded</option>
               </select>
             </div>
