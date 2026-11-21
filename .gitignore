@@ -7,6 +7,7 @@ node_modules/
 target/
 dist/
 build/
+!site/src/app/**/build/
 .wasm
 *.wasm
 

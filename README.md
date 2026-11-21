@@ -140,6 +140,32 @@ stellar contract deploy \
   --source deployer --network testnet
 ```
 
+## Run the Web App (`site/`)
+
+```bash
+cd site
+npm install
+npm test          # unit tests: sign-in, commitments, AI isolation, events, Postgres store
+npm run dev       # http://localhost:3000
+```
+
+Configuration (see `.env.example`):
+
+| Variable | Needed for |
+|---|---|
+| `NEXT_PUBLIC_CONTRACT_ID`, `NEXT_PUBLIC_STELLAR_RPC_URL` | Which escrow contract and RPC to use (default: testnet deploy) |
+| `SESSION_SECRET` | Wallet sign-in cookies. **Required in production** (≥ 32 chars) |
+| `DATABASE_URL` | Postgres / Supabase metadata store. Unset = JSON files in `site/data/` (dev only; not persistent on Vercel) |
+| `CRON_SECRET` | Lets Vercel Cron run a full event sync at `/api/indexer/sync` |
+| `ANTHROPIC_API_KEY` | Optional advisory AI assistant (drafts + PR first-pass review) |
+| `GITHUB_TOKEN` | Optional; higher GitHub API limits for PR verification |
+
+**Database.** Migrations live in `site/db/migrations/` and are applied automatically
+on first access (or `npm run db:migrate`). With Supabase, use the pooled connection
+string; Row Level Security is enabled on every table with public read-only policies,
+so the anon key can read but never write. Balances are never stored as truth:
+every financial row carries a verifiable Stellar transaction hash.
+
 ## Architecture
 
 ```text

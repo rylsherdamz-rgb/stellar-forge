@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listBounties, createBounty } from "@/lib/store";
+import { sessionAddress } from "@/lib/session";
 
 // GET /api/bounties - public list of bounties
 export async function GET() {
@@ -9,7 +10,13 @@ export async function GET() {
 
 // POST /api/bounties - create off-chain bounty metadata
 export async function POST(req: Request) {
+  const creator = sessionAddress(req);
+  if (!creator) {
+    return NextResponse.json({ error: "Connect your wallet to create a bounty" }, { status: 401 });
+  }
   const body = await req.json();
+  // The creator is always the signed-in wallet, never a client-supplied value.
+  body.creator = creator;
 
   const required = [
     "title",
