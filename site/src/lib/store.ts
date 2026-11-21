@@ -54,6 +54,15 @@ export interface Bounty {
   creator: string; // wallet address
   claimedBy: string | null;
   submission: Submission | null;
+  /** Cached advisory AI review of the current submission (never affects funds). */
+  aiReview?: {
+    verdict: "likely_meets" | "unclear" | "likely_does_not_meet";
+    summary: string;
+    criteria: { criterion: string; status: "met" | "unclear" | "not_met"; note: string }[];
+    concerns: string[];
+    prUrl: string;
+    createdAt: string;
+  };
   // On-chain evidence (tx hashes) - independently verifiable.
   tx: {
     created?: string;
