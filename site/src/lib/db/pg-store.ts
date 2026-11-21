@@ -12,6 +12,7 @@ const TX_TYPE: Record<keyof Bounty["tx"], string> = {
   approved: "BOUNTY_RELEASE",
   refunded: "REFUND",
   cancelled: "CANCEL",
+  rejected: "REJECT",
 };
 const TX_KEY = Object.fromEntries(Object.entries(TX_TYPE).map(([k, v]) => [v, k])) as Record<
   string,
@@ -36,6 +37,7 @@ interface BountyRow {
   creator: string;
   claimed_by: string | null;
   ai_review: Bounty["aiReview"] | string | null;
+  rejections: Bounty["rejections"] | string | null;
   created_at: string | Date;
   updated_at: string | Date;
   submission: Record<string, unknown> | string | null;
@@ -85,6 +87,7 @@ function toBounty(r: BountyRow): Bounty {
         }
       : null,
     ...(r.ai_review ? { aiReview: json(r.ai_review)! } : {}),
+    ...(json(r.rejections)?.length ? { rejections: json(r.rejections)! } : {}),
     tx,
     createdAt: iso(r.created_at),
     updatedAt: iso(r.updated_at),
@@ -164,8 +167,9 @@ async function upsertRow(db: Db, b: Bounty) {
   await db.query(
     `insert into bounties (id, contract_id, escrow_id, title, description, requirements,
        acceptance_criteria, github_repository, tech, reward_amount, asset, deadline_ledger,
-       status, onchain_status, metadata_hash, creator, claimed_by, ai_review, created_at, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+       status, onchain_status, metadata_hash, creator, claimed_by, ai_review, created_at, updated_at,
+       rejections)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
      on conflict (id) do update set
        escrow_id = excluded.escrow_id, title = excluded.title, description = excluded.description,
        requirements = excluded.requirements, acceptance_criteria = excluded.acceptance_criteria,
@@ -174,6 +178,7 @@ async function upsertRow(db: Db, b: Bounty) {
        deadline_ledger = excluded.deadline_ledger, status = excluded.status,
        onchain_status = excluded.onchain_status, metadata_hash = excluded.metadata_hash,
        claimed_by = excluded.claimed_by, ai_review = excluded.ai_review,
+       rejections = excluded.rejections,
        updated_at = excluded.updated_at`,
     [
       b.id,
@@ -196,6 +201,7 @@ async function upsertRow(db: Db, b: Bounty) {
       b.aiReview ? JSON.stringify(b.aiReview) : null,
       b.createdAt,
       b.updatedAt,
+      JSON.stringify(b.rejections ?? []),
     ],
   );
 }

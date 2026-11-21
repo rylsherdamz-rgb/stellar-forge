@@ -66,6 +66,27 @@ test("projection follows the full lifecycle, including unclaim", () => {
   assert.equal(mid.claimedBy, null);
 });
 
+test("v0.3: rejection sends the bounty back to CLAIMED; completed carries the fee", () => {
+  const rejected = raw("rejected", 7, xdr.ScVal.scvBytes(Buffer.alloc(32, 0xcd)));
+  const resubmitted = raw("submitted", 7, xdr.ScVal.scvVec([addr(dev), xdr.ScVal.scvBytes(Buffer.alloc(32, 0xef))]));
+  const paid = raw("completed", 7, xdr.ScVal.scvVec([addr(dev), i128(243_750_000), i128(6_250_000)]));
+
+  const r = decodeEvent(rejected)!;
+  assert.equal(r.kind, "rejected");
+  assert.equal(r.data.reasonHash, "cd".repeat(32));
+
+  const mid = projectBounty(decodeAll([created, claimed, submitted, rejected]))!;
+  assert.equal(mid.status, "CLAIMED");
+  assert.equal(mid.claimedBy, dev);
+  assert.equal(mid.tx.rejected, rejected.txHash);
+
+  const done = projectBounty(decodeAll([created, claimed, submitted, rejected, resubmitted, paid]))!;
+  assert.equal(done.status, "COMPLETED");
+  const p = decodeEvent(paid)!;
+  assert.equal(p.data.amount, "243750000");
+  assert.equal(p.data.fee, "6250000");
+});
+
 test("re-ingesting the same events is idempotent", () => {
   const first = decodeAll([created, claimed, submitted]);
   const once = mergeEvents([], first);

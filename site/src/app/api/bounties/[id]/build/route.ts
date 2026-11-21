@@ -8,14 +8,16 @@ import {
   buildApproveBounty,
   buildRefundBounty,
   buildCancelBounty,
+  buildRejectSubmission,
+  buildClaimAfterReview,
   explainContractError,
 } from "@/lib/contract";
-import { metadataHash, submissionHash } from "@/lib/commitments";
+import { metadataHash, submissionHash, reasonHash } from "@/lib/commitments";
 import { sessionAddress } from "@/lib/session";
 
 const PR_URL = /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+\/?$/;
 
-type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel";
+type Action = "create" | "claim" | "submit" | "approve" | "refund" | "cancel" | "reject" | "claim_review";
 
 // POST /api/bounties/:id/build
 // Body: { action, address, ...extra }
@@ -75,6 +77,21 @@ export async function POST(
           escrowId,
           submissionHash: await submissionHash(prUrl, body.commitHash),
         });
+        break;
+      }
+      case "reject": {
+        if (escrowId == null) return fail("Bounty is not funded on-chain yet", 409);
+        if (!isCreator) return fail("Only the bounty creator can request a revision", 403);
+        const reason = String(body.reason || "").trim();
+        if (reason.length < 10) return fail("Explain what needs to change (at least 10 characters)");
+        if (reason.length > 2000) return fail("Keep the revision note under 2000 characters");
+        xdr = await buildRejectSubmission({ creator: address, escrowId, reasonHash: await reasonHash(reason) });
+        break;
+      }
+      case "claim_review": {
+        if (escrowId == null) return fail("Bounty is not funded on-chain yet", 409);
+        if (address !== bounty.claimedBy) return fail("Only the developer who submitted can collect", 403);
+        xdr = await buildClaimAfterReview({ developer: address, escrowId });
         break;
       }
       case "approve":

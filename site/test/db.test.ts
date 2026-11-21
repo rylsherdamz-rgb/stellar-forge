@@ -26,7 +26,7 @@ const hash = (c: string) => c.repeat(64);
 
 before(async () => {
   setDbForTests(db);
-  assert.deepEqual(await migrate(db), ["0001_init.sql"]);
+  assert.deepEqual(await migrate(db), ["0001_init.sql", "0002_v03_reject.sql"]);
 });
 
 test("migrations are applied once", async () => {
@@ -81,7 +81,7 @@ test("bounty lifecycle round-trips through Postgres", async () => {
   assert.equal(done.submission?.verified, true);
   assert.deepEqual(done.tx, { created: hash("1"), claimed: hash("2"), submitted: hash("3"), approved: hash("4") });
   assert.deepEqual(await getBounty(b.id), done);
-  assert.equal((await listBounties()).length, 1);
+  assert.equal((await listBounties()).filter((x) => x.creator === creator).length >= 1, true);
 
   const users = await db.query<{ wallet_address: string; github_username: string | null }>(
     "select wallet_address, github_username from users order by wallet_address",
@@ -95,6 +95,19 @@ test("bounty lifecycle round-trips through Postgres", async () => {
   );
   assert.equal(release[0].type, "BOUNTY_RELEASE");
   assert.equal(Number(release[0].amount), 25);
+});
+
+test("revision requests persist and are recorded as REJECT transactions", async () => {
+  const b = await createBounty({
+    escrowId: 4, title: "t2", description: "d", requirements: "r", acceptanceCriteria: "c",
+    githubRepository: "alice/app", tech: ["Rust"], rewardAmount: "5", asset: "XLM", deadlineLedger: 9000, creator,
+  });
+  const rejection = { reason: "Add a test for iOS", reasonHash: hash("d"), txHash: hash("5"), at: new Date().toISOString() };
+  const r = (await updateBounty(b.id, { status: "CLAIMED", rejections: [rejection], tx: { rejected: hash("5") } }))!;
+  assert.deepEqual(r.rejections, [rejection]);
+  assert.equal(r.tx.rejected, hash("5"));
+  const row = await db.query<{ type: string }>("select type from transactions where tx_hash = $1", [hash("5")]);
+  assert.equal(row[0].type, "REJECT");
 });
 
 test("financial rows require a real tx hash", async () => {

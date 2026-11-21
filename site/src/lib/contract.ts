@@ -188,6 +188,32 @@ export async function readBounty(escrowId: number): Promise<OnchainBounty | null
   }
 }
 
+export interface OnchainTerms {
+  feeBps: number;
+  feeRecipient: string | null;
+  reviewPeriod: number;
+  /** Ledger of the latest submission (0 until submitted). */
+  submittedAt: number;
+}
+
+/** v0.3 per-bounty terms; null on older contracts that lack get_terms. */
+export async function readTerms(escrowId: number): Promise<OnchainTerms | null> {
+  try {
+    const raw = (await simulateRead("get_terms", [
+      nativeToScVal(escrowId, { type: "u64" }),
+    ])) as Record<string, unknown> | null;
+    if (!raw) return null;
+    return {
+      feeBps: Number(raw.fee_bps),
+      feeRecipient: raw.fee_recipient ? String(raw.fee_recipient) : null,
+      reviewPeriod: Number(raw.review_period),
+      submittedAt: Number(raw.submitted_at),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Next bounty id the contract will assign (informational only). */
 export async function readNextId(): Promise<number | null> {
   try {
@@ -221,6 +247,29 @@ export function inspectInvoke(
   } catch {
     return null;
   }
+}
+
+/** v0.3: creator sends the submission back for revision. */
+export async function buildRejectSubmission(params: {
+  creator: string;
+  escrowId: number;
+  reasonHash: Uint8Array;
+}): Promise<string> {
+  return buildInvoke(params.creator, "reject_submission", [
+    nativeToScVal(params.escrowId, { type: "u64" }),
+    nativeToScVal(Buffer.from(params.reasonHash), { type: "bytes" }),
+  ]);
+}
+
+/** v0.3: developer collects after the creator's review window lapsed. */
+export async function buildClaimAfterReview(params: {
+  developer: string;
+  escrowId: number;
+}): Promise<string> {
+  return buildInvoke(params.developer, "claim_after_review", [
+    nativeToScVal(params.escrowId, { type: "u64" }),
+    new Address(params.developer).toScVal(),
+  ]);
 }
 
 /**
@@ -273,10 +322,16 @@ const CONTRACT_ERRORS: Record<number, string> = {
   19: "Creators cannot claim their own bounty",
   20: "Only the creator or developer can do this",
   21: "Bounty is not in dispute",
+  22: "The creator's review window is still open",
+  23: "Invalid platform fee",
+  24: "Invalid review period",
 };
 
 /** Turn a raw simulation/host error into a readable message where possible. */
 export function explainContractError(message: string): string {
+  if (/non-existent contract function|MissingValue.*function/i.test(message)) {
+    return "This action needs the v0.3 escrow contract; the configured deployment is older";
+  }
   const m = message.match(/Error\(Contract, #(\d+)\)/);
   if (m && CONTRACT_ERRORS[Number(m[1])]) {
     return `${CONTRACT_ERRORS[Number(m[1])]} (contract error #${m[1]})`;

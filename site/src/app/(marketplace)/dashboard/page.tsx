@@ -16,6 +16,7 @@ function nextStep(b: Bounty, role: Role): string | null {
     if (b.escrowId == null && !b.tx.created) return "Not funded on-chain";
     return null;
   }
+  if (b.status === "CLAIMED" && b.rejections?.length) return "Submit your revision";
   if (b.status === "CLAIMED") return "Submit your pull request";
   if (b.status === "SUBMITTED") return "Waiting for creator review";
   if (b.status === "DISPUTED") return "Awaiting admin resolution";
@@ -100,7 +101,7 @@ export default function Dashboard() {
   const list = role === "creator" ? created : claimed;
   const actionable = list.filter((b) => {
     const s = nextStep(b, role);
-    return s === "Review submission" || s === "Submit your pull request";
+    return s === "Review submission" || s === "Submit your pull request" || s === "Submit your revision";
   });
   const settled = (role === "creator" ? created : claimed).filter((b) => b.status === "COMPLETED");
 

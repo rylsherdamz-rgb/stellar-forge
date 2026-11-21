@@ -17,6 +17,7 @@ export type EventKind =
   | "cancelled"
   | "refunded"
   | "disputed"
+  | "rejected"
   | "deadline";
 
 const KINDS = new Set<EventKind>([
@@ -28,6 +29,7 @@ const KINDS = new Set<EventKind>([
   "cancelled",
   "refunded",
   "disputed",
+  "rejected",
   "deadline",
 ]);
 
@@ -67,10 +69,12 @@ const FIELDS: Record<EventKind, string[]> = {
   claimed: ["developer"],
   unclaimed: ["developer"],
   submitted: ["developer", "submissionHash"],
-  completed: ["developer", "amount"],
+  // v0.3 adds the withheld platform fee; v0.2 events simply lack it.
+  completed: ["developer", "amount", "fee"],
   cancelled: ["amount"],
   refunded: ["amount"],
   disputed: ["by"],
+  rejected: ["reasonHash"],
   deadline: ["deadline"],
 };
 
@@ -126,6 +130,7 @@ const STATUS_AFTER: Partial<Record<EventKind, BountyStatus>> = {
   cancelled: "CANCELLED",
   refunded: "REFUNDED",
   disputed: "DISPUTED",
+  rejected: "CLAIMED",
 };
 
 const TX_KEY: Partial<Record<EventKind, keyof Bounty["tx"]>> = {
@@ -135,6 +140,7 @@ const TX_KEY: Partial<Record<EventKind, keyof Bounty["tx"]>> = {
   completed: "approved",
   cancelled: "cancelled",
   refunded: "refunded",
+  rejected: "rejected",
 };
 
 /**
