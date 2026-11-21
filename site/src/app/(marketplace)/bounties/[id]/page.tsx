@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useCallback, useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useWallet } from "@/components/WalletProvider";
 import { runAction } from "@/lib/actions";
 import { explorerTx } from "@/lib/config";
 import type { Bounty } from "@/lib/store";
+
+const EVENT_STATUS: Record<string, string> = {
+  created: "OPEN",
+  claimed: "CLAIMED",
+  unclaimed: "OPEN",
+  submitted: "SUBMITTED",
+  completed: "COMPLETED",
+  cancelled: "CANCELLED",
+  refunded: "REFUNDED",
+  disputed: "DISPUTED",
+  deadline: "CLAIMED",
+};
 
 export default function BountyDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -15,10 +27,44 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
 
-  const load = () =>
-    fetch(`/api/bounties/${id}`).then((r) => r.json()).then((d) => setBounty(d.bounty));
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  useEffect(() => {
+    fetch("/api/ai/status").then((r) => r.json()).then((d) => setAiEnabled(!!d.enabled)).catch(() => {});
+  }, []);
 
-  useEffect(() => { load(); }, [id]);
+  async function aiReview(refresh = false) {
+    setError(null);
+    setReviewing(true);
+    try {
+      const res = await fetch("/api/ai/analyze-submission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bountyId: id, refresh }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Review failed");
+      setBounty((b) => (b ? { ...b, aiReview: data.review } : b));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Review failed");
+    } finally {
+      setReviewing(false);
+    }
+  }
+
+  type ChainEvent = { id: string; kind: string; ledger: number; closedAt: string; txHash: string; explorer: string; data: Record<string, unknown> };
+  const [events, setEvents] = useState<ChainEvent[]>([]);
+  useEffect(() => {
+    fetch(`/api/bounties/${id}/events`).then((r) => r.json()).then((d) => setEvents(d.events || [])).catch(() => {});
+  }, [id, lastTx]);
+
+  const load = useCallback(
+    () =>
+      fetch(`/api/bounties/${id}?sync=1`).then((r) => r.json()).then((d) => setBounty(d.bounty)),
+    [id],
+  );
+
+  useEffect(() => { load(); }, [load]);
 
   async function act(action: "claim" | "approve" | "refund" | "cancel") {
     setError(null); setLastTx(null);
@@ -83,6 +129,43 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
             </>
           )}
 
+          {bounty.submission && isCreator && aiEnabled && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <strong>AI first-pass review</strong>
+                <button className="btn btn-secondary" onClick={() => aiReview(!!bounty.aiReview)} disabled={reviewing}>
+                  {reviewing ? "Reviewing…" : bounty.aiReview ? "Re-run" : "Review against criteria"}
+                </button>
+              </div>
+              {bounty.aiReview && bounty.aiReview.prUrl === bounty.submission.githubPrUrl && (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ margin: "0 0 8px" }}>
+                    <span className={`status ${bounty.aiReview.verdict === "likely_meets" ? "COMPLETED" : bounty.aiReview.verdict === "unclear" ? "CLAIMED" : "DISPUTED"}`}>
+                      {bounty.aiReview.verdict.replace(/_/g, " ")}
+                    </span>
+                  </p>
+                  <p style={{ margin: "0 0 10px" }}>{bounty.aiReview.summary}</p>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {bounty.aiReview.criteria.map((c, i) => (
+                      <li key={i} style={{ marginBottom: 4 }}>
+                        <strong>{c.status === "met" ? "✓" : c.status === "not_met" ? "✗" : "?"}</strong> {c.criterion}
+                        <span style={{ color: "var(--text-dim)" }}> - {c.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {bounty.aiReview.concerns.length > 0 && (
+                    <div className="notice err" style={{ marginBottom: 0 }}>
+                      {bounty.aiReview.concerns.join(" · ")}
+                    </div>
+                  )}
+                </div>
+              )}
+              <small style={{ display: "block", color: "var(--text-dim)", marginTop: 10 }}>
+                Advisory only. The assistant cannot approve or pay; you decide, and only your signature releases funds.
+              </small>
+            </div>
+          )}
+
           {error && <div className="notice err">{error}</div>}
           {lastTx && (
             <div className="notice ok">
@@ -121,18 +204,39 @@ export default function BountyDetail({ params }: { params: Promise<{ id: string 
             )}
           </div>
 
-          {(bounty.tx.created || bounty.tx.approved || bounty.tx.refunded) && (
-            <div className="label" style={{ marginTop: 24 }}>On-chain transactions</div>
+          {events.length > 0 ? (
+            <>
+              <div className="label" style={{ marginTop: 24 }}>On-chain history</div>
+              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                {events.map((e) => (
+                  <li key={e.id} style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span className={`status ${EVENT_STATUS[e.kind] ?? "OPEN"}`}>{e.kind}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: "0.82rem" }}>
+                      {new Date(e.closedAt).toLocaleString()} · ledger {e.ledger}
+                    </span>
+                    <a className="tx-link" href={e.explorer} target="_blank" rel="noreferrer">
+                      {e.txHash.slice(0, 12)}…
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            Object.values(bounty.tx).some(Boolean) && (
+              <>
+                <div className="label" style={{ marginTop: 24 }}>On-chain transactions</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {Object.entries(bounty.tx).map(([k, h]) =>
+                    h ? (
+                      <a key={k} className="tx-link" href={explorerTx(h)} target="_blank" rel="noreferrer">
+                        {k}: {h.slice(0, 16)}…
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              </>
+            )
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {Object.entries(bounty.tx).map(([k, h]) =>
-              h ? (
-                <a key={k} className="tx-link" href={explorerTx(h)} target="_blank" rel="noreferrer">
-                  {k}: {h.slice(0, 16)}…
-                </a>
-              ) : null,
-            )}
-          </div>
         </div>
       </div>
     </section>

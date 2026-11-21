@@ -8,7 +8,7 @@ function short(a: string) {
 }
 
 export default function Nav() {
-  const { address, connect, connecting } = useWallet();
+  const { address, connect, disconnect, connecting, restoring, error } = useWallet();
   return (
     <nav>
       <div className="container">
@@ -18,11 +18,32 @@ export default function Nav() {
         <div className="links">
           <Link href="/bounties">Bounties</Link>
           <Link href="/create">Create</Link>
-          <button className="btn btn-primary wallet-btn" onClick={connect} disabled={connecting}>
-            {address ? short(address) : connecting ? "Connecting…" : "Connect Wallet"}
-          </button>
+          <Link href="/dashboard">Dashboard</Link>
+          {address ? (
+            <button
+              className="btn btn-secondary wallet-btn"
+              onClick={disconnect}
+              title={`Signed in as ${address}. Click to disconnect.`}
+            >
+              {short(address)} · Disconnect
+            </button>
+          ) : (
+            <button
+              className="btn btn-primary wallet-btn"
+              onClick={connect}
+              disabled={connecting || restoring}
+              title={error ?? undefined}
+            >
+              {connecting ? "Check your wallet…" : "Connect Wallet"}
+            </button>
+          )}
         </div>
       </div>
+      {error && (
+        <div className="container">
+          <div className="notice err" role="alert" style={{ margin: "8px 0 0" }}>{error}</div>
+        </div>
+      )}
     </nav>
   );
 }

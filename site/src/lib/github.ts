@@ -97,3 +97,56 @@ export async function verifySubmission(
   const verified = checks.exists && checks.repoMatches && checks.authorMatches;
   return { verified, reasons, checks };
 }
+
+export interface PrForReview {
+  title: string;
+  body: string;
+  author: string;
+  merged: boolean;
+  files: { filename: string; status: string; additions: number; deletions: number; patch?: string }[];
+  truncated: boolean;
+}
+
+/** Fetch PR title/body/changed files (patches capped) for an advisory review. */
+export async function fetchPrForReview(
+  prUrl: string,
+  opts: { token?: string; maxPatchChars?: number } = {},
+): Promise<PrForReview> {
+  const { owner, repo, number } = parsePrUrl(prUrl);
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "stellar-forge",
+  };
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+  const base = `${GITHUB_API}/repos/${owner}/${repo}/pulls/${number}`;
+  const [prRes, filesRes] = await Promise.all([
+    fetch(base, { headers }),
+    fetch(`${base}/files?per_page=100`, { headers }),
+  ]);
+  if (!prRes.ok) throw new Error(`GitHub PR lookup failed: ${prRes.status}`);
+  const pr = await prRes.json();
+  const files = filesRes.ok ? ((await filesRes.json()) as PrForReview["files"]) : [];
+
+  let budget = opts.maxPatchChars ?? 40_000;
+  let truncated = false;
+  const trimmed = files.map((f) => {
+    const patch = f.patch ?? "";
+    if (patch.length <= budget) {
+      budget -= patch.length;
+      return { ...f, patch };
+    }
+    truncated = true;
+    const part = patch.slice(0, Math.max(0, budget));
+    budget = 0;
+    return { ...f, patch: part ? `${part}\n…[truncated]` : undefined };
+  });
+  return {
+    title: String(pr.title ?? ""),
+    body: String(pr.body ?? "").slice(0, 8_000),
+    author: String(pr.user?.login ?? ""),
+    merged: pr.merged === true || !!pr.merged_at,
+    files: trimmed,
+    truncated,
+  };
+}

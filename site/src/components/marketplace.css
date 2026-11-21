@@ -112,7 +112,8 @@
 .mkt .status.CLAIMED { color: var(--amber); background: rgba(251,191,36,0.13); }
 .mkt .status.SUBMITTED { color: var(--blue); background: rgba(96,165,250,0.13); }
 .mkt .status.COMPLETED { color: var(--accent); background: var(--accent-soft); }
-.mkt .status.CANCELLED, .mkt .status.REFUNDED { color: var(--text-muted); background: rgba(99,99,127,0.14); }
+.mkt .status.DISPUTED { color: var(--red, #f87171); background: rgba(248,113,113,0.13); }
+.mkt .status.CANCELLED, .mkt .status.REFUNDED, .mkt .status.EXPIRED { color: var(--text-muted); background: rgba(99,99,127,0.14); }
 .mkt .reward { font-family: var(--font-mono), ui-monospace, monospace; font-weight: 700; font-size: 0.9rem; background: var(--accent-soft); border: 1px solid rgba(139,92,246,0.28); padding: 4px 11px; border-radius: var(--r-input); }
 .mkt .meta-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; }
 .mkt .meta-row span { display: inline-flex; align-items: center; gap: 5px; }
