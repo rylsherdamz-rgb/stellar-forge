@@ -16,6 +16,8 @@ export type BountyStatus =
   | "SUBMITTED"
   | "COMPLETED"
   | "CANCELLED"
+  | "EXPIRED"
+  | "DISPUTED"
   | "REFUNDED";
 
 export interface Submission {
@@ -27,6 +29,8 @@ export interface Submission {
   submittedAt: string;
   verified?: boolean;
   verifyReasons?: string[];
+  /** hex sha256 committed on-chain as submission_hash. */
+  submissionHash?: string;
 }
 
 export interface Bounty {
@@ -43,6 +47,10 @@ export interface Bounty {
   asset: "XLM";
   deadlineLedger: number | null;
   status: BountyStatus;
+  /** Last status read from the contract (authoritative when present). */
+  onchainStatus?: BountyStatus;
+  /** hex sha256 committed on-chain as metadata_hash at create time. */
+  metadataHash?: string;
   creator: string; // wallet address
   claimedBy: string | null;
   submission: Submission | null;
